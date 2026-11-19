@@ -117,3 +117,7 @@ Identity service is configured in `environments/dev/services/identity-service/`.
 CloudNativePG owns its separate database/role, Secrets are bootstrapped without
 Git values, and the service migrates before rollout. Fresh installation and the
 explicitly requested one-account import are described in [docs/identity-service.md](docs/identity-service.md).
+
+Shop follows the same deployment contract in `environments/dev/services/shop-service/`
+and has its own database/role `shop_srv`. Details and checks:
+[docs/shop-service.md](docs/shop-service.md).

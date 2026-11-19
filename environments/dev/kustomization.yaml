@@ -10,3 +10,4 @@ resources:
 - services/client-gateway/application.yaml
 - services/admin-gateway/application.yaml
 - services/identity-service/application.yaml
+- services/shop-service/application.yaml

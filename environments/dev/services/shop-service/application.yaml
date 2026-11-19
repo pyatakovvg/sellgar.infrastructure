@@ -1,0 +1,42 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: dev-shop-service
+  namespace: argocd
+  annotations:
+    sellgar.io/image-source-commit: bbe16ca9b2c757951dcedd32d80d249ec2a54348
+    sellgar.io/image-ci-run: '44609854076'
+spec:
+  project: sellgar-dev
+  sources:
+  - repoURL: https://github.com/pyatakovvg/sellgar.infrastructure.git
+    targetRevision: 98c9c6b226c877ec2ae35d6b12aaacd98eea9d9d
+    path: charts/application
+    helm:
+      releaseName: shop-service
+      valueFiles:
+      - $app/helm/values.app.yaml
+      - $app/helm/dev/values.yaml
+      parameters:
+      - name: image.repository
+        value: ghcr.io/pyatakovvg/sellgar.shop.service
+      - name: image.digest
+        value: sha256:eeff8f625e4057b2488e9574d205149e48cc878fe7c30119cafddc52d623ec0b
+  - repoURL: https://github.com/pyatakovvg/sellgar.shop.service.git
+    targetRevision: bbe16ca9b2c757951dcedd32d80d249ec2a54348
+    ref: app
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: sellgar-dev
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+    - CreateNamespace=true
+    retry:
+      limit: 3
+      backoff:
+        duration: 5s
+        factor: 2
+        maxDuration: 1m
