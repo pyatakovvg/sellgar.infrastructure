@@ -1,0 +1,11 @@
+apiVersion: postgresql.cnpg.io/v1
+kind: Database
+metadata:
+  name: product-database
+spec:
+  cluster:
+    name: postgresql
+  name: product_srv_v2
+  owner: product_srv_v2
+  ensure: present
+  databaseReclaimPolicy: retain
