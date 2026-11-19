@@ -15,7 +15,6 @@ environments/<dev|prod>/
     images.yaml                  закреплённые образы на этапе подготовки
   services/<service>/
     application.yaml             источник chart и назначение Argo CD
-    image-values.yaml            выбранный repository/digest образа из CI
 docs/
   platform-images.md             происхождение образов и результаты проверок
 ```
@@ -29,8 +28,8 @@ docs/
 в `helm/values.app.yaml`, а параметры dev/prod и ConfigMap — в
 `helm/<environment>/values.yaml` своего репозитория. Это принятая структура по
 примеру `payment-terminal.app.ui/helm`. Kubernetes templates в каждом приложении
-не дублируются. Argo CD сможет получать общий chart отсюда, а values — из
-репозитория приложения. Здесь выбираются ревизии chart/values и digest образа.
+не дублируются. Argo CD получает общий chart отсюда, а values — из
+репозитория приложения. В Application выбираются ревизии chart/values и digest образа.
 Конфигурация операторов и общих хранилищ принадлежит `platform/`.
 
 ## Образы
@@ -65,4 +64,6 @@ PersistentVolumes и Secrets для dev, затем подключение GitOp
 Общий chart подготовлен и описан в [charts/application/README.md](charts/application/README.md).
 Bootstrap Argo CD находится в `bootstrap/argocd`, корневой dev Application —
 в `bootstrap/dev`. Порядок установки: [bootstrap/README.md](bootstrap/README.md).
+Dev Application админки находится в `environments/dev/services/admin-ui/`;
+обновление версии и проверки описаны в [docs/admin-ui.md](docs/admin-ui.md).
 Ansible и deployment остальных сервисов пока не подключены.

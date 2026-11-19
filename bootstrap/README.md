@@ -1,8 +1,21 @@
 # Первоначальная настройка GitOps
 
+## Сеть локальной VM
+
+На текущем хосте исходящий трафик проходит через VPN с MTU 1420. MTU 1500
+в VM приводил к зависанию TLS при обращении к GitHub; снижение до 1380
+восстановило HTTPS и git access из repo-server. Для этой VM используется
+`local-vm/99-sellgar-mtu.yaml`, устанавливаемый в `/etc/netplan/` с режимом 0600.
+После `netplan apply` и перезапуска K3s Flannel вычисляет MTU 1330.
+Это настройка локальной VM, а не универсальное значение для production VPS.
+
+## Argo CD
+
 `argocd/` устанавливает официальный Argo CD 3.6.2 по зафиксированному commit;
 образы также закреплены digest. Установка предназначена для текущего одного
 узла K3s. Argo CD API/UI остаётся ClusterIP, внешний Ingress не создаётся.
+Repo-server читает Helm values без submodules (`ARGOCD_GIT_MODULES_ENABLED=false`):
+исходники вложенных библиотек собирает CI, для deployment они не нужны.
 
 Сначала, с kubeconfig нужного кластера:
 
