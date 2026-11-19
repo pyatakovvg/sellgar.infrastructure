@@ -1,0 +1,11 @@
+apiVersion: postgresql.cnpg.io/v1
+kind: Database
+metadata:
+  name: store-database
+spec:
+  cluster:
+    name: postgresql
+  name: store_srv
+  owner: store_srv
+  ensure: present
+  databaseReclaimPolicy: retain

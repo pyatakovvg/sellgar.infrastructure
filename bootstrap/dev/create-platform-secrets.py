@@ -19,6 +19,7 @@ credentials = {
     "identity-database": {"username": "identity_srv", "password": secrets.token_hex(32)},
     "shop-database": {"username": "shop_srv", "password": secrets.token_hex(32)},
     "product-database": {"username": "product_srv_v2", "password": secrets.token_hex(32)},
+    "store-database": {"username": "store_srv", "password": secrets.token_hex(32)},
     "identity-auth": {
         "password-hmac-secret": secrets.token_hex(48),
         "session-hash-key": secrets.token_hex(48),
@@ -39,7 +40,7 @@ for name, values in credentials.items():
     manifest = {
         "apiVersion": "v1", "kind": "Secret",
         "metadata": {"name": name, "namespace": namespace, "labels": {"cnpg.io/reload": "true"} if name.endswith("-database") else {}},
-        "type": "kubernetes.io/basic-auth" if name in ("socket-database", "identity-database", "shop-database", "product-database", "minio-root") else "Opaque",
+        "type": "kubernetes.io/basic-auth" if name in ("socket-database", "identity-database", "shop-database", "product-database", "store-database", "minio-root") else "Opaque",
         "stringData": values,
     }
     subprocess.run([*kubectl, "create", "-f", "-"], input=json.dumps(manifest), text=True, check=True)

@@ -5,6 +5,7 @@ resources:
 - identity-database.yaml
 - shop-database.yaml
 - product-database.yaml
+- store-database.yaml
 - postgresql.yaml
 - rabbitmq.yaml
 - minio.yaml

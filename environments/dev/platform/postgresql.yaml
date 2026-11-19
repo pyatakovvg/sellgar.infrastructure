@@ -26,6 +26,12 @@ spec:
       superuser: false
       passwordSecret:
         name: product-database
+    - name: store_srv
+      ensure: present
+      login: true
+      superuser: false
+      passwordSecret:
+        name: store-database
   bootstrap:
     initdb:
       database: socket_srv
