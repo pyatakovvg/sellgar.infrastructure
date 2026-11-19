@@ -1,0 +1,28 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: dev-media-service
+  namespace: argocd
+spec:
+  project: sellgar-dev
+  source:
+    repoURL: ghcr.io/pyatakovvg/helm
+    chart: sellgar-media-service-dev
+    targetRevision: '>=0.0.0'
+    helm:
+      releaseName: media-service
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: sellgar-dev
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+    - CreateNamespace=true
+    retry:
+      limit: 3
+      backoff:
+        duration: 5s
+        factor: 2
+        maxDuration: 1m

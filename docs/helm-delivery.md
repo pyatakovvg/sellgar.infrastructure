@@ -64,3 +64,7 @@ selectors, рекурсивное наложение values, замену спи
 Штатные механизмы описаны в документации Argo CD:
 [Helm OCI](https://argo-cd.readthedocs.io/en/stable/user-guide/helm/),
 [отслеживание версий](https://argo-cd.readthedocs.io/en/stable/user-guide/tracking_strategies/).
+
+## Подключённые приложения
+
+Admin UI, витрина, Admin/Client/Socket gateways, Identity, Shop, Product, Store, Cart, File и Media используют общий action и отдельный Helm OCI-пакет среды. Dev Application каждого приложения отслеживает semver-диапазон; старые multi-source источники с image digest и source SHA удалены.
