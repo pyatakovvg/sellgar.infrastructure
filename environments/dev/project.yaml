@@ -1,0 +1,27 @@
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: sellgar-dev
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: '-1'
+spec:
+  description: Приложения Sellgar в локальной dev-среде
+  sourceRepos:
+    - https://github.com/pyatakovvg/sellgar.infrastructure.git
+    - https://github.com/pyatakovvg/sellgar.ui.admin.git
+  destinations:
+    - server: https://kubernetes.default.svc
+      namespace: sellgar-dev
+  clusterResourceWhitelist:
+    - group: ''
+      kind: Namespace
+  namespaceResourceWhitelist:
+    - group: ''
+      kind: ConfigMap
+    - group: ''
+      kind: Service
+    - group: apps
+      kind: Deployment
+    - group: networking.k8s.io
+      kind: Ingress

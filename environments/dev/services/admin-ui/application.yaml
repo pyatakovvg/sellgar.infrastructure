@@ -1,0 +1,42 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: dev-admin-ui
+  namespace: argocd
+  annotations:
+    sellgar.io/image-source-commit: 1fdfc11f77244e5f23f89cd47179dd700417574a
+    sellgar.io/image-ci-run: '44577211478'
+spec:
+  project: sellgar-dev
+  sources:
+    - repoURL: https://github.com/pyatakovvg/sellgar.infrastructure.git
+      targetRevision: f008cf0847ce0476c51c68fff64d2a234cf4f8d4
+      path: charts/application
+      helm:
+        releaseName: admin-ui
+        valueFiles:
+          - $app/helm/values.app.yaml
+          - $app/helm/dev/values.yaml
+        parameters:
+          - name: image.repository
+            value: ghcr.io/pyatakovvg/sellgar.ui.admin
+          - name: image.digest
+            value: sha256:bfbbb50d74b665cb9b76070eeed5829dc56bbf1cf434e5ad0e6934fa7ec0f1b8
+    - repoURL: https://github.com/pyatakovvg/sellgar.ui.admin.git
+      targetRevision: eb3364d9065a8f8c5099fda2e4d5c4649ef62c31
+      ref: app
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: sellgar-dev
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+    retry:
+      limit: 3
+      backoff:
+        duration: 5s
+        factor: 2
+        maxDuration: 1m
