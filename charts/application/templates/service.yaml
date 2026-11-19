@@ -10,5 +10,5 @@ spec:
     {{- include "application.selectorLabels" . | nindent 4 }}
   ports:
     - name: http
-      port: 80
+      port: {{ .Values.applicationPort }}
       targetPort: http

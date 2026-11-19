@@ -104,3 +104,9 @@ not public database/broker/MinIO console Ingress. Examples:
 Retrieve credentials through your authorized Kubernetes client; never paste them
 into issues or logs. These manifests do not provision domain service databases
 or restore any existing host data.
+
+Internal application HTTP listeners and ClusterIP Services use port `8080`.
+The chart derives the Service port from `applicationPort` (default `8080`);
+Ingress routes use its named `http` port. Internal app URLs include `:8080`.
+Infrastructure protocols retain their standard ports. Local host development
+ports remain distinct so applications can run together outside Kubernetes.
