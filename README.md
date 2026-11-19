@@ -110,3 +110,10 @@ The chart derives the Service port from `applicationPort` (default `8080`);
 Ingress routes use its named `http` port. Internal app URLs include `:8080`.
 Infrastructure protocols retain their standard ports. Local host development
 ports remain distinct so applications can run together outside Kubernetes.
+
+## Identity development deployment
+
+Identity service is configured in `environments/dev/services/identity-service/`.
+CloudNativePG owns its separate database/role, Secrets are bootstrapped without
+Git values, and the service migrates before rollout. Fresh installation and the
+explicitly requested one-account import are described in [docs/identity-service.md](docs/identity-service.md).

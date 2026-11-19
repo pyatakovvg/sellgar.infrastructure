@@ -9,3 +9,4 @@ resources:
 - services/socket-gateway/application.yaml
 - services/client-gateway/application.yaml
 - services/admin-gateway/application.yaml
+- services/identity-service/application.yaml

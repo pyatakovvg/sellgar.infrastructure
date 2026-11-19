@@ -1,0 +1,42 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: dev-identity-service
+  namespace: argocd
+  annotations:
+    sellgar.io/image-source-commit: 542f1b8b5fa3fdcb87decba024d54eaf812bf34a
+    sellgar.io/image-ci-run: '44604246244'
+spec:
+  project: sellgar-dev
+  sources:
+  - repoURL: https://github.com/pyatakovvg/sellgar.infrastructure.git
+    targetRevision: 98c9c6b226c877ec2ae35d6b12aaacd98eea9d9d
+    path: charts/application
+    helm:
+      releaseName: identity-service
+      valueFiles:
+      - $app/helm/values.app.yaml
+      - $app/helm/dev/values.yaml
+      parameters:
+      - name: image.repository
+        value: ghcr.io/pyatakovvg/sellgar.identity.service
+      - name: image.digest
+        value: sha256:afc69bab1c258975889e8bdd6ab47cb8412950df1e3bedde2552806af046afad
+  - repoURL: https://github.com/pyatakovvg/sellgar.identity.service.git
+    targetRevision: 542f1b8b5fa3fdcb87decba024d54eaf812bf34a
+    ref: app
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: sellgar-dev
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+    - CreateNamespace=true
+    retry:
+      limit: 3
+      backoff:
+        duration: 5s
+        factor: 2
+        maxDuration: 1m
