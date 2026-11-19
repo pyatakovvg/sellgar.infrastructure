@@ -4,8 +4,8 @@ metadata:
   name: dev-admin-ui
   namespace: argocd
   annotations:
-    sellgar.io/image-source-commit: 1fdfc11f77244e5f23f89cd47179dd700417574a
-    sellgar.io/image-ci-run: '44577211478'
+    sellgar.io/image-source-commit: bcfbcea9ca44663235f9cd6e01713e050a6ad83f
+    sellgar.io/image-ci-run: '44612347757'
 spec:
   project: sellgar-dev
   sources:
@@ -21,9 +21,9 @@ spec:
       - name: image.repository
         value: ghcr.io/pyatakovvg/sellgar.ui.admin
       - name: image.digest
-        value: sha256:bfbbb50d74b665cb9b76070eeed5829dc56bbf1cf434e5ad0e6934fa7ec0f1b8
+        value: sha256:6e2a5b074898ebf646de8234cc649f522bbd8b7019d29017eb7418f243c5febe
   - repoURL: https://github.com/pyatakovvg/sellgar.ui.admin.git
-    targetRevision: dffd2d6fdb3c201af92c366b81fe945d82ba443e
+    targetRevision: bcfbcea9ca44663235f9cd6e01713e050a6ad83f
     ref: app
   destination:
     server: https://kubernetes.default.svc
