@@ -1,0 +1,9 @@
+.local/
+.env
+.env.*
+!.env.example
+*.kubeconfig
+*.tar
+*.tar.gz
+*.pem
+*.key

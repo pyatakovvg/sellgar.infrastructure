@@ -1,0 +1,14 @@
+# Базовый inventory. Production deployment пока не настроен.
+# Перед запуском prod обновить MinIO: см. docs/platform-images.md.
+postgresql:
+  image: ghcr.io/cloudnative-pg/postgresql:16.16-standard-trixie@sha256:0848a2f80eb48d9bff76857ce988a6053b4120e7ecbdc4414e24cb1cd2df0754
+rabbitmq:
+  image: docker.io/library/rabbitmq:4.4.1-management@sha256:61f90c401a5b5ed2486771973ea92ad66046471eacab9c9149f1a6e091c91677
+minio:
+  image: ghcr.io/pyatakovvg/sellgar-minio:RELEASE.2025-09-07T16-13-09Z@sha256:52dfd5c0bbd38d3219f2058c7af216d9f9a27a994b7b5baad09bbd38866015ff
+  platforms:
+    - linux/amd64
+minioClient:
+  image: ghcr.io/pyatakovvg/sellgar-minio-client:RELEASE.2025-08-13T08-35-41Z@sha256:bdfae21c72b19fae5a005c56dddba25a873d75fac3dda60f55aea7e417382cbe
+  platforms:
+    - linux/amd64
