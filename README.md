@@ -30,7 +30,7 @@ docs/
 примеру `payment-terminal.app.ui/helm`. Kubernetes templates в каждом приложении
 не дублируются. Для Helm OCI доставки CI включает общий chart и values в версионный пакет GHCR.
 Argo CD следит за пакетами среды; инфраструктурный Git не меняется при каждом выпуске.
-Контракт: [helm-delivery.md](docs/helm-delivery.md). Админка переводится на этот механизм;
+Контракт: [helm-delivery.md](docs/helm-delivery.md). Админка переведена на этот механизм;
 остальные приложения пока используют прежние multi-source Applications с закреплённым digest.
 Конфигурация операторов и общих хранилищ принадлежит `platform/`.
 
