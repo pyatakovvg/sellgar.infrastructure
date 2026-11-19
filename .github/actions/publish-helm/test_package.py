@@ -60,6 +60,7 @@ class HelmReleaseTests(unittest.TestCase):
         resources = list(yaml.safe_load_all(rendered))
         self.assertEqual(resources, list(yaml.safe_load_all(baseline)))
         deployment = next(resource for resource in resources if resource["kind"] == "Deployment")
+        self.assertFalse(deployment["spec"]["template"]["spec"]["enableServiceLinks"])
         self.assertEqual(deployment["spec"]["selector"]["matchLabels"], {
             "app.kubernetes.io/name": "application", "app.kubernetes.io/instance": "admin-ui"
         })
