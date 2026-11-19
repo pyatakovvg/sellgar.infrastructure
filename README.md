@@ -66,4 +66,5 @@ Bootstrap Argo CD находится в `bootstrap/argocd`, корневой dev
 в `bootstrap/dev`. Порядок установки: [bootstrap/README.md](bootstrap/README.md).
 Dev Application админки находится в `environments/dev/services/admin-ui/`;
 обновление версии и проверки описаны в [docs/admin-ui.md](docs/admin-ui.md).
-Ansible и deployment остальных сервисов пока не подключены.
+Dev-подключение витрины описано в [docs/storefront.md](docs/storefront.md).
+Ansible и deployment backend-сервисов пока не подключены.

@@ -1,0 +1,42 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: dev-storefront
+  namespace: argocd
+  annotations:
+    sellgar.io/image-source-commit: ad069c2b92becca151be03c24a40e1f66cc68377
+    sellgar.io/image-ci-run: '44585235465'
+spec:
+  project: sellgar-dev
+  sources:
+    - repoURL: https://github.com/pyatakovvg/sellgar.infrastructure.git
+      targetRevision: f008cf0847ce0476c51c68fff64d2a234cf4f8d4
+      path: charts/application
+      helm:
+        releaseName: storefront
+        valueFiles:
+          - $app/helm/values.app.yaml
+          - $app/helm/dev/values.yaml
+        parameters:
+          - name: image.repository
+            value: ghcr.io/pyatakovvg/sellgar.ui.desktop
+          - name: image.digest
+            value: sha256:a9e0f00c12a53b39a5bb6c7481205991064c93c0cc2f206a6377496af4742058
+    - repoURL: https://github.com/pyatakovvg/sellgar.ui.desktop.git
+      targetRevision: ad069c2b92becca151be03c24a40e1f66cc68377
+      ref: app
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: sellgar-dev
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+    retry:
+      limit: 3
+      backoff:
+        duration: 5s
+        factor: 2
+        maxDuration: 1m

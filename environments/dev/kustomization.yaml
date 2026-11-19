@@ -3,3 +3,4 @@ kind: Kustomization
 resources:
   - project.yaml
   - services/admin-ui/application.yaml
+  - services/storefront/application.yaml

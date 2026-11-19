@@ -10,6 +10,7 @@ spec:
   sourceRepos:
     - https://github.com/pyatakovvg/sellgar.infrastructure.git
     - https://github.com/pyatakovvg/sellgar.ui.admin.git
+    - https://github.com/pyatakovvg/sellgar.ui.desktop.git
   destinations:
     - server: https://kubernetes.default.svc
       namespace: sellgar-dev
