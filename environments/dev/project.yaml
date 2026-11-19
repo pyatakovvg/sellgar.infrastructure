@@ -15,6 +15,7 @@ spec:
   - https://github.com/pyatakovvg/sellgar.client.gateway.git
   - https://github.com/pyatakovvg/sellgar.socket.gateway.git
   - https://github.com/pyatakovvg/sellgar.identity.service.git
+  - https://github.com/pyatakovvg/sellgar.shop.service.git
   destinations:
   - server: https://kubernetes.default.svc
     namespace: sellgar-dev

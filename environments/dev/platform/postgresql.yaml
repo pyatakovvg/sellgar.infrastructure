@@ -14,6 +14,12 @@ spec:
       superuser: false
       passwordSecret:
         name: identity-database
+    - name: shop_srv
+      ensure: present
+      login: true
+      superuser: false
+      passwordSecret:
+        name: shop-database
   bootstrap:
     initdb:
       database: socket_srv

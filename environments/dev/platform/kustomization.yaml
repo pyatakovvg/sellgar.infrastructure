@@ -3,6 +3,7 @@ kind: Kustomization
 namespace: sellgar-dev
 resources:
 - identity-database.yaml
+- shop-database.yaml
 - postgresql.yaml
 - rabbitmq.yaml
 - minio.yaml
