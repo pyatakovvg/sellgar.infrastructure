@@ -3,28 +3,8 @@ kind: Application
 metadata:
   name: dev-socket-gateway
   namespace: argocd
-  annotations:
-    sellgar.io/image-source-commit: ce38fc00e8d46e4a05cb86a4165388d68bda13c1
-    sellgar.io/image-ci-run: '44597282776'
 spec:
   project: sellgar-dev
-  sources:
-  - repoURL: https://github.com/pyatakovvg/sellgar.infrastructure.git
-    targetRevision: 98c9c6b226c877ec2ae35d6b12aaacd98eea9d9d
-    path: charts/application
-    helm:
-      releaseName: socket-gateway
-      valueFiles:
-      - $app/helm/values.app.yaml
-      - $app/helm/dev/values.yaml
-      parameters:
-      - name: image.repository
-        value: ghcr.io/pyatakovvg/sellgar.socket.gateway
-      - name: image.digest
-        value: sha256:1eb053006471bf4bc6d350346778c27697b7b6da1954e520897138825ec9cf07
-  - repoURL: https://github.com/pyatakovvg/sellgar.socket.gateway.git
-    targetRevision: ce38fc00e8d46e4a05cb86a4165388d68bda13c1
-    ref: app
   destination:
     server: https://kubernetes.default.svc
     namespace: sellgar-dev
@@ -40,3 +20,9 @@ spec:
         duration: 5s
         factor: 2
         maxDuration: 1m
+  source:
+    repoURL: ghcr.io/pyatakovvg/helm
+    chart: sellgar-socket-gateway-dev
+    targetRevision: '>=0.0.0'
+    helm:
+      releaseName: socket-gateway

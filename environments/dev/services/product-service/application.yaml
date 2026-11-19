@@ -3,28 +3,8 @@ kind: Application
 metadata:
   name: dev-product-service
   namespace: argocd
-  annotations:
-    sellgar.io/image-source-commit: a76bd00eaedd8cfa84752c21771789b20fcb7d4c
-    sellgar.io/image-ci-run: '44614717883'
 spec:
   project: sellgar-dev
-  sources:
-  - repoURL: https://github.com/pyatakovvg/sellgar.infrastructure.git
-    targetRevision: 98c9c6b226c877ec2ae35d6b12aaacd98eea9d9d
-    path: charts/application
-    helm:
-      releaseName: product-service
-      valueFiles:
-      - $app/helm/values.app.yaml
-      - $app/helm/dev/values.yaml
-      parameters:
-      - name: image.repository
-        value: ghcr.io/pyatakovvg/sellgar.product.service
-      - name: image.digest
-        value: sha256:f31bb58d3850341588dc39e3cfe0a21eab9b6f9d759cdc4744308b48e2d163a7
-  - repoURL: https://github.com/pyatakovvg/sellgar.product.service.git
-    targetRevision: a76bd00eaedd8cfa84752c21771789b20fcb7d4c
-    ref: app
   destination:
     server: https://kubernetes.default.svc
     namespace: sellgar-dev
@@ -40,3 +20,9 @@ spec:
         duration: 5s
         factor: 2
         maxDuration: 1m
+  source:
+    repoURL: ghcr.io/pyatakovvg/helm
+    chart: sellgar-product-service-dev
+    targetRevision: '>=0.0.0'
+    helm:
+      releaseName: product-service
