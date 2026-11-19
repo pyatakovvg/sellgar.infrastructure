@@ -1,0 +1,7 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+- https://github.com/rabbitmq/cluster-operator/releases/download/v2.23.3/cluster-operator-ghcr-io.yml
+images:
+- name: ghcr.io/rabbitmq/cluster-operator
+  digest: sha256:487c7566e5341f00d17e5c2fd079b76a49869dd6d51081371c396f32dbbf5c6a

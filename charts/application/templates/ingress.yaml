@@ -5,9 +5,14 @@ metadata:
   name: {{ .Release.Name }}
   labels:
     {{- include "application.labels" . | nindent 4 }}
-  {{- with .Values.ingress.annotations }}
+  {{- if or .Values.ingress.annotations .Values.ingress.stripPrefix }}
   annotations:
+    {{- if .Values.ingress.stripPrefix }}
+    traefik.ingress.kubernetes.io/router.middlewares: {{ printf "%s-%s-strip-prefix@kubernetescrd" .Release.Namespace .Release.Name | quote }}
+    {{- end }}
+    {{- with .Values.ingress.annotations }}
     {{- toYaml . | nindent 4 }}
+    {{- end }}
   {{- end }}
 spec:
   ingressClassName: {{ .Values.ingress.className }}

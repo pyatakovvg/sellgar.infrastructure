@@ -1,0 +1,20 @@
+postgresql:
+  tag: v1.30.2
+  url: https://github.com/cloudnative-pg/cloudnative-pg/releases/download/v1.30.2/cnpg-1.30.2.yaml
+  sha256: ea4cc355b394e10661d30c6b409cefb19029dd973bccb76b1ed8c789985bc68c
+  images:
+  - ghcr.io/cloudnative-pg/cloudnative-pg:1.30.2
+rabbitmq:
+  tag: v2.23.3
+  url: https://github.com/rabbitmq/cluster-operator/releases/download/v2.23.3/cluster-operator-ghcr-io.yml
+  sha256: 3ccd8a7c8a7f319ff21c444f3599829242f3cc1c18ae2dedea170cfcefeb8681
+  images:
+  - ghcr.io/rabbitmq/cluster-operator:2.23.3
+cert-manager:
+  tag: v1.21.3
+  url: https://github.com/cert-manager/cert-manager/releases/download/v1.21.3/cert-manager.yaml
+  sha256: c04a51295adda2b1a775146751f973e787190778c7f35180861d9678876e5c74
+  images:
+  - quay.io/jetstack/cert-manager-cainjector:v1.21.3
+  - quay.io/jetstack/cert-manager-controller:v1.21.3
+  - quay.io/jetstack/cert-manager-webhook:v1.21.3

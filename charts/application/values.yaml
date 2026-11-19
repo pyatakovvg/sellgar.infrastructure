@@ -7,6 +7,12 @@ imagePullSecrets: []
 
 applicationPort: 8080
 env: {}
+command: []
+args: []
+migration:
+  enabled: false
+  command: []
+  args: []
 configmaps: []
 volumeMounts: []
 volumes: []
@@ -29,5 +35,6 @@ ingress:
   className: traefik
   host: ''
   path: /
+  stripPrefix: false
   annotations: {}
   tlsSecretName: ''

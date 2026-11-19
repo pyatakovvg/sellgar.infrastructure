@@ -1,0 +1,22 @@
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: sellgar-platform-dev
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: '-1'
+spec:
+  sourceRepos:
+  - https://github.com/pyatakovvg/sellgar.infrastructure.git
+  destinations:
+  - server: https://kubernetes.default.svc
+    namespace: sellgar-dev
+  namespaceResourceWhitelist:
+  - group: postgresql.cnpg.io
+    kind: Cluster
+  - group: rabbitmq.com
+    kind: RabbitmqCluster
+  - group: apps
+    kind: StatefulSet
+  - group: ''
+    kind: Service

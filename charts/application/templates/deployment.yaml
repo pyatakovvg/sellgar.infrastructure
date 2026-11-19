@@ -48,12 +48,15 @@ spec:
             preStop:
               sleep:
                 seconds: 5
-          {{- with .Values.env }}
+          {{- with .Values.command }}
+          command: {{ toJson . }}
+          {{- end }}
+          {{- with .Values.args }}
+          args: {{ toJson . }}
+          {{- end }}
+          {{- if .Values.env }}
           env:
-            {{- range $name, $value := . }}
-            - name: {{ $name | quote }}
-              value: {{ $value | quote }}
-            {{- end }}
+            {{- include "application.env" . | nindent 12 }}
           {{- end }}
           {{- with .Values.probes.startup }}
           startupProbe:

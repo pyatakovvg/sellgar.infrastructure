@@ -68,3 +68,39 @@ Dev Application админки находится в `environments/dev/services/
 обновление версии и проверки описаны в [docs/admin-ui.md](docs/admin-ui.md).
 Dev-подключение витрины описано в [docs/storefront.md](docs/storefront.md).
 Ansible и deployment backend-сервисов пока не подключены.
+
+## Development platform and credentials
+
+`environments/dev/platform/` deploys PostgreSQL (CloudNativePG), RabbitMQ
+(Cluster Operator), and MinIO with fresh local-path PVCs. All endpoints are
+ClusterIP-only. Data is retained independently of application releases;
+`dev-platform` intentionally disables automated pruning.
+
+First install `bootstrap/operators/` in documented order. Then run
+`python3 bootstrap/dev/create-platform-secrets.py kubectl --kubeconfig <path>`.
+This creates missing random credentials directly in Kubernetes and preserves
+existing Secrets. PostgreSQL bootstraps `socket_srv` database/owner from
+`socket-database`; RabbitMQ operator creates `rabbitmq-default-user`.
+`socket-auth` is shared by all three gateway ticket implementations;
+`admin-auth` is admin fingerprint signing, `minio-root` is storage administration.
+Private GHCR images require a separately provisioned `ghcr-pull` dockerconfigjson
+Secret with registry pull access. Never commit Docker config or credentials.
+Changing a Secret does not itself rotate database/broker passwords; rotation
+must update both the owning platform and clients deliberately.
+
+The app chart accepts literal env values or `valueFrom.secretKeyRef`. ConfigMaps
+contain only non-secret `.env` data. Socket migration runs as a Sync hook after
+its ConfigMap (wave -2) and before Deployment (wave 0). Migration failure blocks
+rollout; the old ready deployment remains available during a normal upgrade.
+Traefik strips `/api/admin` and `/api/client`; `/socket.io` is preserved for
+physical channel paths. Kubernetes readiness removes unready pods from routing.
+Socket transports are WebSocket-only and require no polling sticky sessions.
+
+To administer services use authenticated `kubectl port-forward` or SSH tunnel,
+not public database/broker/MinIO console Ingress. Examples:
+`kubectl -n sellgar-dev port-forward service/postgresql-rw 15432:5432`,
+`kubectl -n sellgar-dev port-forward service/rabbitmq 15672:15672`,
+`kubectl -n sellgar-dev port-forward service/minio 19001:9001`.
+Retrieve credentials through your authorized Kubernetes client; never paste them
+into issues or logs. These manifests do not provision domain service databases
+or restore any existing host data.

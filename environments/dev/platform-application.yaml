@@ -1,0 +1,20 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: dev-platform
+  namespace: argocd
+spec:
+  project: sellgar-platform-dev
+  source:
+    repoURL: https://github.com/pyatakovvg/sellgar.infrastructure.git
+    targetRevision: development
+    path: environments/dev/platform
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: sellgar-dev
+  syncPolicy:
+    automated:
+      prune: false
+      selfHeal: true
+    syncOptions:
+    - ServerSideApply=true

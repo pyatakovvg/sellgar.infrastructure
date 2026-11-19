@@ -8,21 +8,28 @@ metadata:
 spec:
   description: Приложения Sellgar в локальной dev-среде
   sourceRepos:
-    - https://github.com/pyatakovvg/sellgar.infrastructure.git
-    - https://github.com/pyatakovvg/sellgar.ui.admin.git
-    - https://github.com/pyatakovvg/sellgar.ui.desktop.git
+  - https://github.com/pyatakovvg/sellgar.infrastructure.git
+  - https://github.com/pyatakovvg/sellgar.ui.admin.git
+  - https://github.com/pyatakovvg/sellgar.ui.desktop.git
+  - https://github.com/pyatakovvg/sellgar.admin.gateway.git
+  - https://github.com/pyatakovvg/sellgar.client.gateway.git
+  - https://github.com/pyatakovvg/sellgar.socket.gateway.git
   destinations:
-    - server: https://kubernetes.default.svc
-      namespace: sellgar-dev
+  - server: https://kubernetes.default.svc
+    namespace: sellgar-dev
   clusterResourceWhitelist:
-    - group: ''
-      kind: Namespace
+  - group: ''
+    kind: Namespace
   namespaceResourceWhitelist:
-    - group: ''
-      kind: ConfigMap
-    - group: ''
-      kind: Service
-    - group: apps
-      kind: Deployment
-    - group: networking.k8s.io
-      kind: Ingress
+  - group: ''
+    kind: ConfigMap
+  - group: ''
+    kind: Service
+  - group: apps
+    kind: Deployment
+  - group: networking.k8s.io
+    kind: Ingress
+  - group: batch
+    kind: Job
+  - group: traefik.io
+    kind: Middleware
