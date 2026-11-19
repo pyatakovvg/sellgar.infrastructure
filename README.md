@@ -121,3 +121,5 @@ explicitly requested one-account import are described in [docs/identity-service.
 Shop follows the same deployment contract in `environments/dev/services/shop-service/`
 and has its own database/role `shop_srv`. Details and checks:
 [docs/shop-service.md](docs/shop-service.md).
+
+Product service: [dev deployment](docs/product-service.md), отдельная база `product_srv_v2`.
