@@ -8,6 +8,7 @@ metadata:
 spec:
   description: Приложения Sellgar в локальной dev-среде
   sourceRepos:
+  - ghcr.io/pyatakovvg/helm
   - https://github.com/pyatakovvg/sellgar.infrastructure.git
   - https://github.com/pyatakovvg/sellgar.ui.admin.git
   - https://github.com/pyatakovvg/sellgar.ui.desktop.git
