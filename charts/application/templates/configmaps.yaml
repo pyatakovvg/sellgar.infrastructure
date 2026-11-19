@@ -1,0 +1,14 @@
+{{- range .Values.configmaps }}
+{{- if .enabled }}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ required "configmaps[].nameOverride is required" .nameOverride }}
+  labels:
+    {{- include "application.labels" $ | nindent 4 }}
+data:
+  {{ required "configmaps[].filename is required" .filename | quote }}: |
+    {{- required "configmaps[].data is required" .data | nindent 4 }}
+{{- end }}
+{{- end }}

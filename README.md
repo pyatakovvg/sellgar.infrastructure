@@ -9,12 +9,13 @@
 ```text
 ansible/                         подготовка серверов и K3s
 bootstrap/                       первоначальная настройка GitOps
+charts/application/             общий chart stateless HTTP-приложений
 environments/<dev|prod>/
   platform/                      PostgreSQL, RabbitMQ, MinIO и общие компоненты
     images.yaml                  закреплённые образы на этапе подготовки
   services/<service>/
     application.yaml             источник chart и назначение Argo CD
-    values.yaml                  параметры среды и ссылки на Secrets
+    image-values.yaml            выбранный repository/digest образа из CI
 docs/
   platform-images.md             происхождение образов и результаты проверок
 ```
@@ -24,10 +25,13 @@ docs/
 Остальные каталоги создаются вместе с соответствующей реализацией.
 Файлы `images.yaml` не нужно применять через `kubectl apply`.
 
-Charts сервисов хранятся в собственных репозиториях в `deploy/helm/`.
-Общая логика charts выделяется в версионируемую Helm library.
-Argo CD будет получать chart из репозитория сервиса, а значения окружения — отсюда.
-Конфигурация операторов и общих хранилищ принадлежит `platform/`, а не charts сервисов.
+Общий chart находится в `charts/application/`. Приложение хранит общие values
+в `helm/values.app.yaml`, а параметры dev/prod и ConfigMap — в
+`helm/<environment>/values.yaml` своего репозитория. Это принятая структура по
+примеру `payment-terminal.app.ui/helm`. Kubernetes templates в каждом приложении
+не дублируются. Argo CD сможет получать общий chart отсюда, а values — из
+репозитория приложения. Здесь выбираются ревизии chart/values и digest образа.
+Конфигурация операторов и общих хранилищ принадлежит `platform/`.
 
 ## Образы
 
@@ -58,4 +62,7 @@ MinIO из этого inventory предназначен для текущей �
 
 Следующий этап — установка операторов PostgreSQL и RabbitMQ, конфигурация MinIO,
 PersistentVolumes и Secrets для dev, затем подключение GitOps.
-Ansible, Argo CD, Helm releases и deployment сервисов ещё не реализованы.
+Общий chart подготовлен и описан в [charts/application/README.md](charts/application/README.md).
+Bootstrap Argo CD находится в `bootstrap/argocd`, корневой dev Application —
+в `bootstrap/dev`. Порядок установки: [bootstrap/README.md](bootstrap/README.md).
+Ansible и deployment остальных сервисов пока не подключены.

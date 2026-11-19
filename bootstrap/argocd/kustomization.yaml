@@ -1,0 +1,17 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: argocd
+resources:
+  - namespace.yaml
+  # Argo CD v3.6.2, зафиксированный upstream commit.
+  - https://raw.githubusercontent.com/argoproj/argo-cd/8e8268ef2f3df99ca95663f5080fa6056f156805/manifests/install.yaml
+images:
+  - name: quay.io/argoproj/argocd
+    newTag: v3.6.2
+    digest: sha256:bbcc3b6e79c5963439bdc5170f6e20a52365b41878133fac5ce8d6810d2641dc
+  - name: ghcr.io/dexidp/dex
+    newTag: v2.46.0
+    digest: sha256:933fcd3f523338c847b88ef84a7145fb2fcb7b9917f08418612afeaaa2001777
+  - name: public.ecr.aws/docker/library/redis
+    newTag: 8.10.1-alpine
+    digest: sha256:ef216d85ec44f4fdf7c0e6df2d1757a4734ed32fbb278cabd3181b5a27353b79

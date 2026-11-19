@@ -1,0 +1,33 @@
+replicas: 1
+
+image:
+  repository: ''
+  digest: ''
+imagePullSecrets: []
+
+applicationPort: 8080
+env: {}
+configmaps: []
+volumeMounts: []
+volumes: []
+probes: {}
+resources: {}
+
+podSecurityContext:
+  runAsNonRoot: true
+  seccompProfile:
+    type: RuntimeDefault
+
+securityContext:
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: true
+  capabilities:
+    drop: [ALL]
+
+ingress:
+  enabled: false
+  className: traefik
+  host: ''
+  path: /
+  annotations: {}
+  tlsSecretName: ''

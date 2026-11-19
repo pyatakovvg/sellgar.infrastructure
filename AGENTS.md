@@ -4,7 +4,10 @@
 пользователя не создавать.
 
 - Репозиторий владеет конфигурацией окружений, подготовкой узлов и GitOps bootstrap.
-- Helm chart сервиса находится в его репозитории, в `deploy/helm/`.
+- Общий переиспользуемый chart находится в `charts/application/`.
+  Репозиторий приложения хранит `helm/values.app.yaml` и
+  `helm/<dev|prod>/values.yaml`, включая содержимое ConfigMap своей среды.
+  Не копировать эти values в инфраструктурный репозиторий.
 - Общие компоненты среды находятся в `environments/<environment>/platform/`.
 - Не хранить credentials, kubeconfig, Docker config, данные БД и бакетов в Git.
   Ссылки на Secrets допустимы; значения — только после настройки шифрования.
