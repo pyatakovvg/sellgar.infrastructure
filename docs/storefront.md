@@ -1,6 +1,7 @@
 # Dev-развёртывание витрины
 
 Адрес — `http://dev.sellgar.io/`, namespace — `sellgar-dev`, release — `storefront`.
+В dev используется одна реплика.
 Админка использует отдельный ingress `/admin`; более длинный prefix сохраняет
 приоритет над `/` витрины. TLS этим этапом не подключается.
 

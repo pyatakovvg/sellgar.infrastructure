@@ -1,7 +1,7 @@
 # Dev-развёртывание админки
 
 Ingress: `dev.sellgar.io/admin`. Кластер — локальная VM `192.168.122.10`,
-namespace — `sellgar-dev`, release — `admin-ui`.
+namespace — `sellgar-dev`, release — `admin-ui`. В dev используется одна реплика.
 
 ## Источники
 

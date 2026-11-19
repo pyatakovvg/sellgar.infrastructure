@@ -23,7 +23,7 @@ spec:
           - name: image.digest
             value: sha256:a9e0f00c12a53b39a5bb6c7481205991064c93c0cc2f206a6377496af4742058
     - repoURL: https://github.com/pyatakovvg/sellgar.ui.desktop.git
-      targetRevision: ad069c2b92becca151be03c24a40e1f66cc68377
+      targetRevision: 1283919be470823fab88cfc656f7257cf6446207
       ref: app
   destination:
     server: https://kubernetes.default.svc
