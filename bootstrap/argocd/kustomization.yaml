@@ -2,34 +2,34 @@ apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 namespace: argocd
 resources:
-  - namespace.yaml
-  # Argo CD v3.6.2, зафиксированный upstream commit.
-  - https://raw.githubusercontent.com/argoproj/argo-cd/8e8268ef2f3df99ca95663f5080fa6056f156805/manifests/install.yaml
+- namespace.yaml
+- https://raw.githubusercontent.com/argoproj/argo-cd/8e8268ef2f3df99ca95663f5080fa6056f156805/manifests/install.yaml
 patches:
-  - target:
-      kind: Deployment
-      name: argocd-repo-server
-    patch: |
-      apiVersion: apps/v1
-      kind: Deployment
-      metadata:
-        name: argocd-repo-server
-      spec:
-        template:
-          spec:
-            containers:
-              - name: argocd-repo-server
-                env:
-                  - name: ARGOCD_GIT_MODULES_ENABLED
-                    valueFrom: null
-                    value: 'false'
+- target:
+    kind: Deployment
+    name: argocd-repo-server
+  patch: "apiVersion: apps/v1\nkind: Deployment\nmetadata:\n  name: argocd-repo-server\n\
+    spec:\n  template:\n    spec:\n      containers:\n        - name: argocd-repo-server\n\
+    \          env:\n            - name: ARGOCD_GIT_MODULES_ENABLED\n            \
+    \  valueFrom: null\n              value: 'false'\n"
+- target:
+    kind: ConfigMap
+    name: argocd-cm
+  patch: "apiVersion: v1\nkind: ConfigMap\nmetadata:\n  name: argocd-cm\ndata:\n \
+    \ timeout.reconciliation: 60s\n  timeout.reconciliation.jitter: 15s\n  timeout.hard.reconciliation:\
+    \ 3m\n"
+- target:
+    kind: ConfigMap
+    name: argocd-cmd-params-cm
+  patch: "apiVersion: v1\nkind: ConfigMap\nmetadata:\n  name: argocd-cmd-params-cm\n\
+    data:\n  reposerver.repo.cache.expiration: 60s\n"
 images:
-  - name: quay.io/argoproj/argocd
-    newTag: v3.6.2
-    digest: sha256:bbcc3b6e79c5963439bdc5170f6e20a52365b41878133fac5ce8d6810d2641dc
-  - name: ghcr.io/dexidp/dex
-    newTag: v2.46.0
-    digest: sha256:933fcd3f523338c847b88ef84a7145fb2fcb7b9917f08418612afeaaa2001777
-  - name: public.ecr.aws/docker/library/redis
-    newTag: 8.10.1-alpine
-    digest: sha256:ef216d85ec44f4fdf7c0e6df2d1757a4734ed32fbb278cabd3181b5a27353b79
+- name: quay.io/argoproj/argocd
+  newTag: v3.6.2
+  digest: sha256:bbcc3b6e79c5963439bdc5170f6e20a52365b41878133fac5ce8d6810d2641dc
+- name: ghcr.io/dexidp/dex
+  newTag: v2.46.0
+  digest: sha256:933fcd3f523338c847b88ef84a7145fb2fcb7b9917f08418612afeaaa2001777
+- name: public.ecr.aws/docker/library/redis
+  newTag: 8.10.1-alpine
+  digest: sha256:ef216d85ec44f4fdf7c0e6df2d1757a4734ed32fbb278cabd3181b5a27353b79

@@ -68,3 +68,7 @@ selectors, рекурсивное наложение values, замену спи
 ## Подключённые приложения
 
 Admin UI, витрина, Admin/Client/Socket gateways, Identity, Shop, Product, Store, Cart, File и Media используют общий action и отдельный Helm OCI-пакет среды. Dev Application каждого приложения отслеживает semver-диапазон; старые multi-source источники с image digest и source SHA удалены.
+
+## Обнаружение повторных выпусков
+
+В `bootstrap/argocd` заданы reconciliation 60s + jitter до 15s, hard reconciliation 3m и repo cache 60s. В установленной Argo CD 3.6.2 список OCI tags относится к кэшу registry; одной автоматической синхронизации Application недостаточно для своевременного обнаружения следующего тега при долгом cache TTL. Периодический hard reconciliation перечитывает registry штатным механизмом Argo; ручные refresh, webhook с kubeconfig и коммиты infrastructure на выпуск не требуются.

@@ -35,7 +35,7 @@ kubectl -n sellgar-dev get deployments,pods,services,ingresses
 ```
 
 Корневой Application `sellgar-dev` читает desired state ветки `development`.
-Дочерние приложения задают конкретные SHA chart/values и digest образа.
+Дочерние приложения следят за версионными Helm OCI-пакетами своей среды. Digest образа и соответствующие values входят в пакет.
 Для dev включена синхронизация после изменения desired state; bootstrap
 не подключает prod. Chart приложения хранится в `charts/application`,
 values и ConfigMaps админки — в её `helm/`.
@@ -50,3 +50,5 @@ kubectl -n argocd port-forward service/argocd-server 8443:443
 `argocd-initial-admin-secret` namespace `argocd`; его содержимое не публикуется
 и не сохраняется в этом репозитории. Изменение пароля и внешняя публикация UI
 в bootstrap не выполняются.
+
+Для Helm OCI включены штатные интервалы Argo CD: обычная сверка раз в 60 секунд (jitter до 15 секунд), hard reconciliation раз в 3 минуты и cache repo-server 60 секунд. Это позволяет обнаруживать новые версии без ручного refresh и коммитов инфраструктуры. После изменения этих startup-параметров перезапустить repo-server и application-controller; работающие приложения это не перезапускает.
