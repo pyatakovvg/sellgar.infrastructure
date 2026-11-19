@@ -7,5 +7,9 @@ spec:
     name: postgresql
   name: store_srv
   owner: store_srv
+  template: template0
+  encoding: UTF8
+  localeCollate: C.UTF-8
+  localeCType: C.UTF-8
   ensure: present
   databaseReclaimPolicy: retain
