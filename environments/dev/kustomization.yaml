@@ -7,3 +7,4 @@ resources:
 - platform-project.yaml
 - platform-application.yaml
 - services/socket-gateway/application.yaml
+- services/client-gateway/application.yaml

@@ -1,0 +1,42 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: dev-client-gateway
+  namespace: argocd
+  annotations:
+    sellgar.io/image-source-commit: 3bc8c8d0bd96a4e2f1d9620b3f802c6d6ad3dc91
+    sellgar.io/image-ci-run: '44594121770'
+spec:
+  project: sellgar-dev
+  sources:
+  - repoURL: https://github.com/pyatakovvg/sellgar.infrastructure.git
+    targetRevision: d4b1a66d93df187e32a2a4a070d7e1293fe89d92
+    path: charts/application
+    helm:
+      releaseName: client-gateway
+      valueFiles:
+      - $app/helm/values.app.yaml
+      - $app/helm/dev/values.yaml
+      parameters:
+      - name: image.repository
+        value: ghcr.io/pyatakovvg/sellgar.client.gateway
+      - name: image.digest
+        value: sha256:b91a83d4673fa3593d3a208387655c01dcf24f6d8b59c9b73a6ccc87535e668a
+  - repoURL: https://github.com/pyatakovvg/sellgar.client.gateway.git
+    targetRevision: 31b8b3d2054c7c71c20c5efa6f2e19df1e69a8bf
+    ref: app
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: sellgar-dev
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+    - CreateNamespace=true
+    retry:
+      limit: 3
+      backoff:
+        duration: 5s
+        factor: 2
+        maxDuration: 1m
