@@ -4,27 +4,27 @@ metadata:
   name: dev-storefront
   namespace: argocd
   annotations:
-    sellgar.io/image-source-commit: ad069c2b92becca151be03c24a40e1f66cc68377
-    sellgar.io/image-ci-run: '44585235465'
+    sellgar.io/image-source-commit: fd7b411a925cd383dce6b5efa3a7b0bdf1ce990a
+    sellgar.io/image-ci-run: '44593933665'
 spec:
   project: sellgar-dev
   sources:
-    - repoURL: https://github.com/pyatakovvg/sellgar.infrastructure.git
-      targetRevision: f008cf0847ce0476c51c68fff64d2a234cf4f8d4
-      path: charts/application
-      helm:
-        releaseName: storefront
-        valueFiles:
-          - $app/helm/values.app.yaml
-          - $app/helm/dev/values.yaml
-        parameters:
-          - name: image.repository
-            value: ghcr.io/pyatakovvg/sellgar.ui.desktop
-          - name: image.digest
-            value: sha256:a9e0f00c12a53b39a5bb6c7481205991064c93c0cc2f206a6377496af4742058
-    - repoURL: https://github.com/pyatakovvg/sellgar.ui.desktop.git
-      targetRevision: 1283919be470823fab88cfc656f7257cf6446207
-      ref: app
+  - repoURL: https://github.com/pyatakovvg/sellgar.infrastructure.git
+    targetRevision: f008cf0847ce0476c51c68fff64d2a234cf4f8d4
+    path: charts/application
+    helm:
+      releaseName: storefront
+      valueFiles:
+      - $app/helm/values.app.yaml
+      - $app/helm/dev/values.yaml
+      parameters:
+      - name: image.repository
+        value: ghcr.io/pyatakovvg/sellgar.ui.desktop
+      - name: image.digest
+        value: sha256:d337efde802a170eb69dad173ba0067d4d83885850f075c06f89f25d1d16dd40
+  - repoURL: https://github.com/pyatakovvg/sellgar.ui.desktop.git
+    targetRevision: fd7b411a925cd383dce6b5efa3a7b0bdf1ce990a
+    ref: app
   destination:
     server: https://kubernetes.default.svc
     namespace: sellgar-dev
@@ -33,7 +33,7 @@ spec:
       prune: true
       selfHeal: true
     syncOptions:
-      - CreateNamespace=true
+    - CreateNamespace=true
     retry:
       limit: 3
       backoff:

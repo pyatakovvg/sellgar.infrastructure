@@ -1,0 +1,42 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: dev-socket-gateway
+  namespace: argocd
+  annotations:
+    sellgar.io/image-source-commit: 48fafeb6eb7cf7993fc7ffef9f5f2df1e3bf6326
+    sellgar.io/image-ci-run: '44594131588'
+spec:
+  project: sellgar-dev
+  sources:
+  - repoURL: https://github.com/pyatakovvg/sellgar.infrastructure.git
+    targetRevision: d4b1a66d93df187e32a2a4a070d7e1293fe89d92
+    path: charts/application
+    helm:
+      releaseName: socket-gateway
+      valueFiles:
+      - $app/helm/values.app.yaml
+      - $app/helm/dev/values.yaml
+      parameters:
+      - name: image.repository
+        value: ghcr.io/pyatakovvg/sellgar.socket.gateway
+      - name: image.digest
+        value: sha256:bdf90c1609e0a79adc6dc6259872b2579afbc353a26071ac841ea5170458831c
+  - repoURL: https://github.com/pyatakovvg/sellgar.socket.gateway.git
+    targetRevision: 07b3d62b04b4b94db9fe553b37ba0cb357950532
+    ref: app
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: sellgar-dev
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+    - CreateNamespace=true
+    retry:
+      limit: 3
+      backoff:
+        duration: 5s
+        factor: 2
+        maxDuration: 1m

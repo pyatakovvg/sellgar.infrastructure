@@ -9,22 +9,22 @@ metadata:
 spec:
   project: sellgar-dev
   sources:
-    - repoURL: https://github.com/pyatakovvg/sellgar.infrastructure.git
-      targetRevision: f008cf0847ce0476c51c68fff64d2a234cf4f8d4
-      path: charts/application
-      helm:
-        releaseName: admin-ui
-        valueFiles:
-          - $app/helm/values.app.yaml
-          - $app/helm/dev/values.yaml
-        parameters:
-          - name: image.repository
-            value: ghcr.io/pyatakovvg/sellgar.ui.admin
-          - name: image.digest
-            value: sha256:bfbbb50d74b665cb9b76070eeed5829dc56bbf1cf434e5ad0e6934fa7ec0f1b8
-    - repoURL: https://github.com/pyatakovvg/sellgar.ui.admin.git
-      targetRevision: 331430d0da486e6150e6bb35f749e0c430eb1c1c
-      ref: app
+  - repoURL: https://github.com/pyatakovvg/sellgar.infrastructure.git
+    targetRevision: f008cf0847ce0476c51c68fff64d2a234cf4f8d4
+    path: charts/application
+    helm:
+      releaseName: admin-ui
+      valueFiles:
+      - $app/helm/values.app.yaml
+      - $app/helm/dev/values.yaml
+      parameters:
+      - name: image.repository
+        value: ghcr.io/pyatakovvg/sellgar.ui.admin
+      - name: image.digest
+        value: sha256:bfbbb50d74b665cb9b76070eeed5829dc56bbf1cf434e5ad0e6934fa7ec0f1b8
+  - repoURL: https://github.com/pyatakovvg/sellgar.ui.admin.git
+    targetRevision: 0cdd8c301a53ca3ead8ecb9b768724622866c5d3
+    ref: app
   destination:
     server: https://kubernetes.default.svc
     namespace: sellgar-dev
@@ -33,7 +33,7 @@ spec:
       prune: true
       selfHeal: true
     syncOptions:
-      - CreateNamespace=true
+    - CreateNamespace=true
     retry:
       limit: 3
       backoff:

@@ -6,3 +6,4 @@ resources:
 - services/storefront/application.yaml
 - platform-project.yaml
 - platform-application.yaml
+- services/socket-gateway/application.yaml
