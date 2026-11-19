@@ -123,3 +123,5 @@ and has its own database/role `shop_srv`. Details and checks:
 [docs/shop-service.md](docs/shop-service.md).
 
 Product service: [dev deployment](docs/product-service.md), отдельная база `product_srv_v2`.
+
+Store service: [dev deployment](docs/store-service.md), отдельная база `store_srv` с Unicode locale.

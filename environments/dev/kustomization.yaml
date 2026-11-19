@@ -12,3 +12,4 @@ resources:
 - services/identity-service/application.yaml
 - services/shop-service/application.yaml
 - services/product-service/application.yaml
+- services/store-service/application.yaml
