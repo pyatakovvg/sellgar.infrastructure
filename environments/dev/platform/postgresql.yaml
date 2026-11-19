@@ -32,6 +32,18 @@ spec:
       superuser: false
       passwordSecret:
         name: store-database
+    - name: cart_srv
+      ensure: present
+      login: true
+      superuser: false
+      passwordSecret:
+        name: cart-database
+    - name: file_srv
+      ensure: present
+      login: true
+      superuser: false
+      passwordSecret:
+        name: file-database
   bootstrap:
     initdb:
       database: socket_srv

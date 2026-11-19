@@ -10,3 +10,5 @@ resources:
 - rabbitmq.yaml
 - minio.yaml
 - minio-service.yaml
+- cart-database.yaml
+- file-database.yaml
