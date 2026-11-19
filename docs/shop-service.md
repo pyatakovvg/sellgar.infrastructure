@@ -43,3 +43,15 @@ already authenticated dev admin browser, create a clearly labelled development
 shop and verify it appears in the list and opens again from the backend.
 Personal PostgreSQL account grants were left unchanged at the user's request;
 application credentials remain separate. Prod is not deployed.
+
+Verified on 2026-11-19: Shop CI `44609854076` passed; `dev-shop-service` is
+Synced/Healthy, Deployment 1/1, all nine migrations are recorded. The admin browser
+created `Магазин разработки` (UUID `9b17e18c-913c-4fea-b311-e63bda0f3790`) with
+synthetic legal details and opened it again from the server-backed list.
+
+Acceptance also exposed an existing admin create-route defect: its loader/action
+required an edit UUID. Admin source `bcfbcea9ca44663235f9cd6e01713e050a6ad83f`
+adds the missing creation path; CI `44612347757` passed and its image is deployed.
+The current Shop list does not refresh after closing the creation drawer; the
+new row is visible after page reload. Live list synchronization remains a separate
+frontend issue, not a Shop database or deployment failure.
