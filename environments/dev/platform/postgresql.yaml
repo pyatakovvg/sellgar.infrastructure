@@ -6,6 +6,14 @@ spec:
   instances: 1
   imageName: ghcr.io/cloudnative-pg/postgresql:16.16-standard-trixie@sha256:0848a2f80eb48d9bff76857ce988a6053b4120e7ecbdc4414e24cb1cd2df0754
   enableSuperuserAccess: false
+  managed:
+    roles:
+    - name: identity_srv
+      ensure: present
+      login: true
+      superuser: false
+      passwordSecret:
+        name: identity-database
   bootstrap:
     initdb:
       database: socket_srv

@@ -16,6 +16,12 @@ if not kubectl:
 namespace = "sellgar-dev"
 credentials = {
     "socket-database": {"username": "socket_srv", "password": secrets.token_hex(32)},
+    "identity-database": {"username": "identity_srv", "password": secrets.token_hex(32)},
+    "identity-auth": {
+        "password-hmac-secret": secrets.token_hex(48),
+        "session-hash-key": secrets.token_hex(48),
+        "fingerprint-storage-secret": secrets.token_hex(48),
+    },
     "socket-auth": {"ticket-secret": secrets.token_hex(48)},
     "admin-auth": {"fingerprint-secret": secrets.token_hex(48)},
     "minio-root": {"username": "sellgar-admin", "password": secrets.token_hex(32)},
@@ -30,8 +36,8 @@ for name, values in credentials.items():
         continue
     manifest = {
         "apiVersion": "v1", "kind": "Secret",
-        "metadata": {"name": name, "namespace": namespace},
-        "type": "kubernetes.io/basic-auth" if name in ("socket-database", "minio-root") else "Opaque",
+        "metadata": {"name": name, "namespace": namespace, "labels": {"cnpg.io/reload": "true"} if name.endswith("-database") else {}},
+        "type": "kubernetes.io/basic-auth" if name in ("socket-database", "identity-database", "minio-root") else "Opaque",
         "stringData": values,
     }
     subprocess.run([*kubectl, "create", "-f", "-"], input=json.dumps(manifest), text=True, check=True)
