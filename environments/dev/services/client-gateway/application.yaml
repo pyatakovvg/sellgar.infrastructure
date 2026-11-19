@@ -4,13 +4,13 @@ metadata:
   name: dev-client-gateway
   namespace: argocd
   annotations:
-    sellgar.io/image-source-commit: 3bc8c8d0bd96a4e2f1d9620b3f802c6d6ad3dc91
-    sellgar.io/image-ci-run: '44594121770'
+    sellgar.io/image-source-commit: 35ae7134761ffa33af3fda27a23358a5d842b04b
+    sellgar.io/image-ci-run: '44597284032'
 spec:
   project: sellgar-dev
   sources:
   - repoURL: https://github.com/pyatakovvg/sellgar.infrastructure.git
-    targetRevision: d4b1a66d93df187e32a2a4a070d7e1293fe89d92
+    targetRevision: 98c9c6b226c877ec2ae35d6b12aaacd98eea9d9d
     path: charts/application
     helm:
       releaseName: client-gateway
@@ -21,9 +21,9 @@ spec:
       - name: image.repository
         value: ghcr.io/pyatakovvg/sellgar.client.gateway
       - name: image.digest
-        value: sha256:b91a83d4673fa3593d3a208387655c01dcf24f6d8b59c9b73a6ccc87535e668a
+        value: sha256:84a0caf8c08678c18011af60f8a635ae7dd85dde2d2e3a132886d5e9cce46f23
   - repoURL: https://github.com/pyatakovvg/sellgar.client.gateway.git
-    targetRevision: 31b8b3d2054c7c71c20c5efa6f2e19df1e69a8bf
+    targetRevision: 35ae7134761ffa33af3fda27a23358a5d842b04b
     ref: app
   destination:
     server: https://kubernetes.default.svc

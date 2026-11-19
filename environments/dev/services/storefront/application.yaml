@@ -10,7 +10,7 @@ spec:
   project: sellgar-dev
   sources:
   - repoURL: https://github.com/pyatakovvg/sellgar.infrastructure.git
-    targetRevision: f008cf0847ce0476c51c68fff64d2a234cf4f8d4
+    targetRevision: 98c9c6b226c877ec2ae35d6b12aaacd98eea9d9d
     path: charts/application
     helm:
       releaseName: storefront
@@ -23,7 +23,7 @@ spec:
       - name: image.digest
         value: sha256:d337efde802a170eb69dad173ba0067d4d83885850f075c06f89f25d1d16dd40
   - repoURL: https://github.com/pyatakovvg/sellgar.ui.desktop.git
-    targetRevision: 5c5f4fd977a58e5f8e5073bcff1df1604dbb23e8
+    targetRevision: 1393154436200e3cc48969dcc7ffa046912697db
     ref: app
   destination:
     server: https://kubernetes.default.svc

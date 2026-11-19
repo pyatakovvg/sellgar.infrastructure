@@ -10,7 +10,7 @@ spec:
   project: sellgar-dev
   sources:
   - repoURL: https://github.com/pyatakovvg/sellgar.infrastructure.git
-    targetRevision: f008cf0847ce0476c51c68fff64d2a234cf4f8d4
+    targetRevision: 98c9c6b226c877ec2ae35d6b12aaacd98eea9d9d
     path: charts/application
     helm:
       releaseName: admin-ui

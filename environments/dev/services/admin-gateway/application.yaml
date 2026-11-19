@@ -4,13 +4,13 @@ metadata:
   name: dev-admin-gateway
   namespace: argocd
   annotations:
-    sellgar.io/image-source-commit: 8cd6289721824d6c9c4cdf345b856057e49a6b39
-    sellgar.io/image-ci-run: '44594294045'
+    sellgar.io/image-source-commit: 5b4c43afb951c49ff415bcb07161277f738e5d2e
+    sellgar.io/image-ci-run: '44597283705'
 spec:
   project: sellgar-dev
   sources:
   - repoURL: https://github.com/pyatakovvg/sellgar.infrastructure.git
-    targetRevision: d4b1a66d93df187e32a2a4a070d7e1293fe89d92
+    targetRevision: 98c9c6b226c877ec2ae35d6b12aaacd98eea9d9d
     path: charts/application
     helm:
       releaseName: admin-gateway
@@ -21,9 +21,9 @@ spec:
       - name: image.repository
         value: ghcr.io/pyatakovvg/sellgar.admin.gateway
       - name: image.digest
-        value: sha256:c71f7990928b22562ac8b6bbecf2542386c983b04b966254e2cd1312c5e89803
+        value: sha256:cc4d0350e5e6ab641fe1923a129e25e475e08a7f4c04520d3a46a605ff44253a
   - repoURL: https://github.com/pyatakovvg/sellgar.admin.gateway.git
-    targetRevision: 12e3d210fbb1890378a7abf7fda097ea901bcab8
+    targetRevision: 5b4c43afb951c49ff415bcb07161277f738e5d2e
     ref: app
   destination:
     server: https://kubernetes.default.svc
