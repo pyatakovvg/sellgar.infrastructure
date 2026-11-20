@@ -27,7 +27,7 @@ Bootstrap сохраняет существующие объекты и поль
 паролей. Если существующий пользователь не соответствует Secret, bootstrap
 завершается ошибкой, не перезаписывая его пароль.
 
-Ingress Media публикует только `/images` на dev.sellgar.io. Загрузка
+Ingress Media публикует только `/images` на `https://dev.sellgar.ru`. Загрузка
 `/internal/objects` доступна admin gateway по `http://media-service:8080`;
 внешнего Ingress к этому пути нет. File и Cart Ingress не имеют.
 
