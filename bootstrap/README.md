@@ -1,5 +1,9 @@
 # Первоначальная настройка GitOps
 
+HTTPS для двух dev-доменов описан в [dev HTTPS](../docs/dev-https.md).
+`traefik/` содержит HelmChartConfig HTTP → HTTPS redirect для установленного в K3s
+Traefik. Применять его после готовности публичного сертификата и HTTPS Ingress.
+
 ## Сеть локальной VM
 
 На текущем хосте исходящий трафик проходит через VPN с MTU 1420. MTU 1500

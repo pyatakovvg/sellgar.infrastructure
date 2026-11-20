@@ -12,3 +12,5 @@ resources:
 - minio-service.yaml
 - cart-database.yaml
 - file-database.yaml
+- letsencrypt-issuer.yaml
+- website-certificate.yaml

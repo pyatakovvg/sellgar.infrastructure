@@ -1,0 +1,277 @@
+# Flant cert-manager-webhook-regru 1.3.2; source f27a1e2817f0ba4d5dfde789fea2e82eb9391c2a.
+# Existing Secret regru-api; upstream broad secrets-reader role is intentionally omitted.
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: regru-webhook
+  labels:
+    app: regru-cluster-issuer
+    chart: regru-cluster-issuer-1.3.0
+    release: regru-webhook
+    heritage: Helm
+  namespace: cert-manager
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: regru-webhook:domain-solver
+  labels:
+    app: regru-cluster-issuer
+    chart: regru-cluster-issuer-1.3.0
+    release: regru-webhook
+    heritage: Helm
+rules:
+- apiGroups:
+  - acme.sellgar.ru
+  resources:
+  - '*'
+  verbs:
+  - create
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: regru-webhook:auth-delegator
+  labels:
+    app: regru-cluster-issuer
+    chart: regru-cluster-issuer-1.3.0
+    release: regru-webhook
+    heritage: Helm
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: system:auth-delegator
+subjects:
+- apiGroup: ''
+  kind: ServiceAccount
+  name: regru-webhook
+  namespace: cert-manager
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: regru-webhook:domain-solver
+  labels:
+    app: regru-cluster-issuer
+    chart: regru-cluster-issuer-1.3.0
+    release: regru-webhook
+    heritage: Helm
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: regru-webhook:domain-solver
+subjects:
+- apiGroup: ''
+  kind: ServiceAccount
+  name: cert-manager
+  namespace: cert-manager
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: regru-webhook:webhook-authentication-reader
+  namespace: kube-system
+  labels:
+    app: regru-cluster-issuer
+    chart: regru-cluster-issuer-1.3.0
+    release: regru-webhook
+    heritage: Helm
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: extension-apiserver-authentication-reader
+subjects:
+- apiGroup: ''
+  kind: ServiceAccount
+  name: regru-webhook
+  namespace: cert-manager
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: regru-webhook
+  namespace: cert-manager
+  labels:
+    app: regru-cluster-issuer
+    chart: regru-cluster-issuer-1.3.0
+    release: regru-webhook
+    heritage: Helm
+spec:
+  type: ClusterIP
+  ports:
+  - port: 443
+    targetPort: https
+    protocol: TCP
+    name: https
+  selector:
+    app: regru-cluster-issuer
+    release: regru-webhook
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: regru-webhook
+  namespace: cert-manager
+  labels:
+    app: regru-cluster-issuer
+    chart: regru-cluster-issuer-1.3.0
+    release: regru-webhook
+    heritage: Helm
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: regru-cluster-issuer
+      release: regru-webhook
+  template:
+    metadata:
+      labels:
+        app: regru-cluster-issuer
+        release: regru-webhook
+    spec:
+      serviceAccountName: regru-webhook
+      containers:
+      - name: regru-cluster-issuer
+        image: ghcr.io/flant/cert-manager-webhook-regru:1.3.2@sha256:3a8245771d94d84b459c4e0b3b13f0da88c12789ea2b8d5a6f6dac904ed14ac6
+        args:
+        - --secure-port=8443
+        - --tls-cert-file=/tls/tls.crt
+        - --tls-private-key-file=/tls/tls.key
+        env:
+        - name: GROUP_NAME
+          value: acme.sellgar.ru
+        - name: REGRU_USERNAME
+          valueFrom:
+            secretKeyRef:
+              name: regru-api
+              key: username
+        - name: REGRU_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: regru-api
+              key: password
+        ports:
+        - name: https
+          containerPort: 8443
+          protocol: TCP
+        livenessProbe:
+          httpGet:
+            scheme: HTTPS
+            path: /healthz
+            port: https
+        readinessProbe:
+          httpGet:
+            scheme: HTTPS
+            path: /healthz
+            port: https
+        volumeMounts:
+        - name: certs
+          mountPath: /tls
+          readOnly: true
+        resources:
+          requests:
+            cpu: 20m
+            memory: 64Mi
+          limits:
+            memory: 256Mi
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          capabilities:
+            drop:
+            - ALL
+      volumes:
+      - name: certs
+        secret:
+          secretName: regru-webhook-webhook-tls
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65532
+        runAsGroup: 65532
+        seccompProfile:
+          type: RuntimeDefault
+---
+apiVersion: apiregistration.k8s.io/v1
+kind: APIService
+metadata:
+  name: v1alpha1.acme.sellgar.ru
+  labels:
+    app: regru-cluster-issuer
+    chart: regru-cluster-issuer-1.3.0
+    release: regru-webhook
+    heritage: Helm
+  annotations:
+    cert-manager.io/inject-ca-from: cert-manager/regru-webhook-webhook-tls
+spec:
+  group: acme.sellgar.ru
+  groupPriorityMinimum: 1000
+  versionPriority: 15
+  service:
+    name: regru-webhook
+    namespace: cert-manager
+  version: v1alpha1
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: regru-webhook-ca
+  namespace: cert-manager
+  labels:
+    app: regru-cluster-issuer
+    chart: regru-cluster-issuer-1.3.0
+    release: regru-webhook
+    heritage: Helm
+spec:
+  secretName: regru-webhook-ca
+  duration: 43800h
+  issuerRef:
+    name: regru-webhook-selfsign
+  commonName: ca.cert-manager-webhook-regru.cert-manager
+  isCA: true
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: regru-webhook-webhook-tls
+  namespace: cert-manager
+  labels:
+    app: regru-cluster-issuer
+    chart: regru-cluster-issuer-1.3.0
+    release: regru-webhook
+    heritage: Helm
+spec:
+  secretName: regru-webhook-webhook-tls
+  duration: 8760h
+  issuerRef:
+    name: regru-webhook-ca
+  dnsNames:
+  - regru-webhook
+  - regru-webhook.cert-manager
+  - regru-webhook.cert-manager.svc
+---
+apiVersion: cert-manager.io/v1
+kind: Issuer
+metadata:
+  name: regru-webhook-selfsign
+  namespace: cert-manager
+  labels:
+    app: regru-cluster-issuer
+    chart: regru-cluster-issuer-1.3.0
+    release: regru-webhook
+    heritage: Helm
+spec:
+  selfSigned: {}
+---
+apiVersion: cert-manager.io/v1
+kind: Issuer
+metadata:
+  name: regru-webhook-ca
+  namespace: cert-manager
+  labels:
+    app: regru-cluster-issuer
+    chart: regru-cluster-issuer-1.3.0
+    release: regru-webhook
+    heritage: Helm
+spec:
+  ca:
+    secretName: regru-webhook-ca

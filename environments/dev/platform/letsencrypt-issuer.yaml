@@ -1,0 +1,19 @@
+apiVersion: cert-manager.io/v1
+kind: Issuer
+metadata:
+  name: letsencrypt
+  namespace: sellgar-dev
+spec:
+  acme:
+    server: https://acme-v02.api.letsencrypt.org/directory
+    privateKeySecretRef:
+      name: letsencrypt-account-key
+    solvers:
+    - selector:
+        dnsNames:
+        - dev.sellgar.ru
+        - admin.dev.sellgar.ru
+      dns01:
+        webhook:
+          groupName: acme.sellgar.ru
+          solverName: regru-dns

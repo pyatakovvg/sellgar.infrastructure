@@ -129,3 +129,5 @@ Product service: [dev deployment](docs/product-service.md), отдельная �
 Store service: [dev deployment](docs/store-service.md), отдельная база `store_srv` с Unicode locale.
 
 Cart, File и Media: [dev deployment](docs/commerce-services.md). Автоматическая доставка всех приложений: [Helm OCI](docs/helm-delivery.md).
+
+HTTPS для `dev.sellgar.ru` и `admin.dev.sellgar.ru`: [cert-manager и Let’s Encrypt](docs/dev-https.md).

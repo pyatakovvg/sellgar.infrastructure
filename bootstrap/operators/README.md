@@ -13,3 +13,8 @@ Upstream release URLs and checksums are recorded in `releases.yaml`.
 RabbitMQ operator requires cert-manager certificates for its admission webhook.
 Platform application data is managed by the `dev-platform` Argo application;
 operators are cluster bootstrap, not dependencies of an individual service.
+
+For public dev HTTPS, reuse this cert-manager installation. The Let's Encrypt
+Issuer and REG.RU DNS-01 prerequisites are documented in
+[dev HTTPS](../../docs/dev-https.md). Install `regru/` only after its existing
+`cert-manager/regru-api` Secret has been provisioned; no credentials belong in Git.
