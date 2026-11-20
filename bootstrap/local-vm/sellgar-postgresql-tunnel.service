@@ -1,0 +1,15 @@
+[Unit]
+Description=Sellgar dev PostgreSQL localhost tunnel
+StartLimitIntervalSec=0
+
+[Service]
+Type=exec
+ExecStart=%h/.local/share/sellgar/vm/sellgar-k3s/bin/kubectl --kubeconfig %h/.local/share/sellgar/vm/sellgar-k3s/kubeconfig -n sellgar-dev port-forward --address 127.0.0.1 --pod-running-timeout=30s service/postgresql-rw 15432:5432
+Restart=always
+RestartSec=5
+TimeoutStopSec=10
+NoNewPrivileges=true
+UMask=0077
+
+[Install]
+WantedBy=default.target

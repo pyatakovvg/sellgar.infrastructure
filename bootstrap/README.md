@@ -13,6 +13,35 @@ Traefik. Применять его после готовности публич�
 После `netplan apply` и перезапуска K3s Flannel вычисляет MTU 1330.
 Это настройка локальной VM, а не универсальное значение для production VPS.
 
+## Постоянный туннель PostgreSQL для DataGrip
+
+На хосте используется пользовательская служба systemd
+`local-vm/sellgar-postgresql-tunnel.service`. Она открывает только
+`127.0.0.1:15432` и направляет соединения в dev Service `postgresql-rw:5432`.
+При обрыве связи процесс перезапускается через 5 секунд и заново выбирает
+актуальный pod. Пока VM выключена, служба повторяет подключение; саму VM она
+не запускает. Уже оборванное JDBC-соединение нужно подключить повторно.
+
+Установка из корня инфраструктурного репозитория:
+
+```bash
+install -Dm644 bootstrap/local-vm/sellgar-postgresql-tunnel.service \
+  "$HOME/.config/systemd/user/sellgar-postgresql-tunnel.service"
+systemctl --user daemon-reload
+systemctl --user enable --now sellgar-postgresql-tunnel.service
+loginctl enable-linger "$USER"
+```
+
+Linger запускает пользовательский systemd при загрузке Ubuntu и сохраняет
+работу службы после выхода из сессии. Служба использует существующий kubeconfig
+из `~/.local/share/sellgar/vm/sellgar-k3s/`; credentials в unit не записываются.
+
+```bash
+systemctl --user status sellgar-postgresql-tunnel.service
+journalctl --user -u sellgar-postgresql-tunnel.service -n 30
+systemctl --user stop sellgar-postgresql-tunnel.service
+```
+
 ## Argo CD
 
 `argocd/` устанавливает официальный Argo CD 3.6.2 по зафиксированному commit;
