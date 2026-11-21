@@ -51,6 +51,7 @@ python3 -m venv .venv
 зашифрованный файл вне Git или в игнорируемом `.local/`:
 
 ```bash
+mkdir -p ../.local
 .venv/bin/ansible-vault create ../.local/dev-vault.yml
 ```
 
@@ -84,3 +85,11 @@ Docker config и аккаунты на управляющей машине не 
 
 Доступ к данным для разработчика остаётся через постоянные systemd-туннели из
 `bootstrap/local-vm/`. Ansible bootstrap не останавливает watcher или туннели.
+
+## Выполненные проверки
+
+21 ноября 2026: syntax-check установочного playbook K3s и всего bootstrap;
+полный bootstrap в check mode на существующем dev — без ошибок и force-conflicts.
+Создание credentials проверено в отдельном временном namespace; повторный запуск
+показал changed=0. Проверочный namespace удалён. Существующая VM не переустанавливалась;
+развёртывание с нуля на отдельном VPS ещё не проверено.
