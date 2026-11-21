@@ -10,6 +10,7 @@ spec:
     namespace: sellgar-dev
   syncPolicy:
     automated:
+      enabled: false
       prune: true
       selfHeal: true
     syncOptions:
