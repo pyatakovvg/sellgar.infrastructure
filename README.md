@@ -50,7 +50,9 @@ Product использует [отдельные видимые jobs](docs/produ
 GitHub reusable workflow: build → publish → параллельно test/migrate → deploy.
 Build/test выполняются на GitHub, migrate/deploy требуют private runner.
 Argo CD не должен управлять теми же ресурсами после перехода Product на Helm CI.
-Наличие workflow не означает установленный runner или завершённую передачу управления.
+Для Product dev runner установлен, передача управления завершена и первый
+полный проход Actions успешно выполнен; результаты и обслуживание — в руководстве
+доставки выше. Остальные сервисы на этот механизм ещё не переведены.
 
 Остальные приложения сохраняют [Helm OCI delivery](docs/helm-delivery.md): CI
 публикует образ и пакет своей среды, Argo CD отслеживает диапазон версий.

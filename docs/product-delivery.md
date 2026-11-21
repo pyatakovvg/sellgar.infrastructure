@@ -2,7 +2,36 @@
 
 This replaces delivery for Product only. Other applications keep their pinned
 Argo CD/Helm OCI mechanism and `.github/actions/publish-helm` remains for them.
-The local rewrite is not a record of an installed runner or completed handover.
+
+## Dev pilot, 21 November 2026
+
+The official repository runner `sellgar-product-dev` is installed on the dev VM
+as the unprivileged `product-runner` systemd service. Its Kubernetes identity is
+`product-delivery-dev`, scoped to `sellgar-dev`; access to production Deployments
+was denied in the permission check. Setup, maintenance and certificate expiry
+are recorded in [the runner guide](../bootstrap/runner/README.md).
+
+The live `argocd/dev-product-service` Application was removed with workloads
+preserved. Helm adopted Product using its previously running image and unchanged
+environment; `/health` stayed successful. The one-time Helm 4 handover used
+`--take-ownership --force-conflicts`. Equal values still shared Argo ownership,
+which blocked the first normal image update. Retired `argocd-controller`
+managedFields entries were then removed from the adopted Deployment/Service;
+their specs were verified unchanged. Routine delivery uses no ownership flags.
+Other Argo Applications remain in place.
+
+Failure checks: a temporary migration-shaped Job exited with code 7 and failed
+the completion wait; it used no DB/broker credentials and was removed. In the
+first actual Actions attempt, setup-helm failed before Job creation and deploy
+was skipped. This verifies the workflow dependency gate, not a failed schema
+migration against the dev database. No database reversal was performed.
+
+[Run 44917345949](https://github.com/pyatakovvg/sellgar.product.service/actions/runs/44917345949)
+completed successfully after runner setup and handover. Its migration Job
+completed and reported no pending migrations; deploy used the verified application
+digest `sha256:1829e303ab058e16e5afbb9565993ff0bea2479d36aa0ffbd141793abe2c367f`
+for source `717a6c6eb1869a144234831288b72e07a00348b7`. Helm revision 4 was deployed,
+the new pod became ready, and the workflow's digest/HTTP health checks passed.
 
 ## Ownership and files
 

@@ -14,6 +14,34 @@ Use the runner's official `sudo ./svc.sh install <runner-user>` and
 token is short-lived; never put it in Git or a unit file. Do not pass the host's
 administrative kubeconfig to the runner.
 
+## Installed dev runner
+
+On 21 November 2026, `sellgar-product-dev` was registered with Product and
+installed as a systemd service on `sellgar-k3s`. It runs as `product-runner`,
+without sudo or Docker access, using official runner version 2.338.2. Its labels
+are `self-hosted`, `linux`, `x64`, `sellgar-dev`. The service starts with the VM:
+
+```bash
+sudo systemctl status actions.runner.pyatakovvg-sellgar.product.service.sellgar-product-dev.service
+sudo journalctl -u actions.runner.pyatakovvg-sellgar.product.service.sellgar-product-dev.service -n 30
+```
+
+The runner's `.env` sets `KUBECONFIG` to the dedicated user's kubeconfig.
+On this VM, Node's default 250 ms network-family selection timeout failed to
+download Helm, while an explicit IPv4 request succeeded. Two requests with
+`NODE_OPTIONS=--network-family-autoselection-attempt-timeout=3000` succeeded;
+this setting is saved in the runner's `.env`. Restart only the idle runner
+service after changing its environment. TLS verification remains enabled.
+
+The initial kubectl download was slow over the dev network. The installed
+official v1.37.2 Linux amd64 client was verified against `kubectl.sha256` from
+`dl.k8s.io` and placed in the runner's standard tool cache:
+`_work/_tool/kubectl/1.37.2/x64/kubectl`, with the sibling `x64.complete` marker.
+Both belong to `product-runner`; setup-kubectl reuses this cache. Its SHA-256 is
+`c04487523e7aa7d1493f7808174c899db93d7a9cf57531420cd76b9bd415f8f4`.
+For a new runner, let the setup action populate its cache or preinstall the
+same pinned, checksum-verified upstream tool before enabling delivery.
+
 ## Kubernetes access
 
 `product-dev-rbac.yaml` binds the Kubernetes user `product-delivery-dev` to the
@@ -22,6 +50,12 @@ the standard Kubernetes CertificateSigningRequest API, with a defined expiry
 and renewal date. Install the dedicated kubeconfig as
 `~/.kube/config` of the runner user, mode 0600, using the VM endpoint and CA.
 No runner credential belongs in the repository.
+
+The installed dev certificate was issued through CSR
+`product-delivery-dev-20261121` and expires on **19 February 2027, 16:49:53 UTC**.
+Renew it before 12 February through the CSR API, replace the certificate in
+the dedicated kubeconfig, and repeat the permission checks below. Renewal is
+manual; no automatic certificate rotation is installed.
 
 Apply the namespace Role/RoleBinding using an administrator, then verify with
 the runner's kubeconfig:
@@ -68,9 +102,20 @@ Other applications keep the previous delivery mechanism.
    Removing a Git manifest is not proof that reconciliation stopped.
 3. Bootstrap a Helm release with the CURRENT verified image, the new chart and
    Product values, `--set migration.enabled=false`, a unique `releaseId`,
-   `--take-ownership --wait`. This adopts the existing resources and introduces
-   the versioned environment ConfigMap. Do not put --take-ownership in routine CI.
-4. Check `helm status product-service -n sellgar-dev`, the running image and
+   `--take-ownership --force-conflicts --wait` with Helm 4. The first flag adopts
+   Helm ownership; the second resolves changed fields owned by the stopped Argo
+   controller. Review the rendered diff before this one-time step.
+   It introduces the versioned environment ConfigMap without replacing resources.
+   Do not put either ownership flag in routine CI; do not use `--force-replace`.
+4. Inspect `kubectl get ... -o json --show-managed-fields` for the adopted
+   Deployment and Service. Equal values can retain shared ownership even with
+   `--force-conflicts`. In the dev pilot, Argo still owned the unchanged image,
+   so the first normal upgrade failed. After confirming the Application was gone,
+   only the retired `argocd-controller` entries were removed with JSON Patch,
+   guarded by a resourceVersion test. Server dry-run and before/after comparisons
+   confirmed identical `spec`; Helm and Kubernetes controller entries remained.
+   Do not clear all managedFields or add permanent force flags to delivery.
+5. Check `helm status product-service -n sellgar-dev`, the running image and
    `/health`. Only then enable ordinary CI delivery.
 
 Routine workflow preflight refuses an existing Deployment that has not been
@@ -78,4 +123,5 @@ adopted by the corresponding Helm release. It never silently takes ownership.
 
 References: [official runner setup](https://docs.github.com/en/actions/how-tos/manage-runners/self-hosted-runners/add-runners),
 [systemd service](https://docs.github.com/en/actions/how-tos/manage-runners/self-hosted-runners/configure-the-application),
-[Kubernetes client certificates](https://kubernetes.io/docs/reference/access-authn-authz/certificate-signing-requests/).
+[Kubernetes client certificates](https://kubernetes.io/docs/reference/access-authn-authz/certificate-signing-requests/),
+[server-side field ownership and conflicts](https://kubernetes.io/docs/reference/using-api/server-side-apply/).
