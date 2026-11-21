@@ -1,0 +1,110 @@
+- name: Provision application credentials
+  ansible.builtin.import_playbook: secrets.yml
+
+- name: Install cluster operators and Argo CD from pinned manifests
+  hosts: control
+  gather_facts: false
+  vars:
+    infrastructure_root: "{{ playbook_dir | dirname }}"
+  module_defaults:
+    group/kubernetes.core.k8s:
+      kubeconfig: "{{ kubeconfig_path }}"
+  tasks:
+  - name: Install cert-manager
+    kubernetes.core.k8s:
+      definition: "{{ lookup('kubernetes.core.kustomize', dir=infrastructure_root + '/bootstrap/operators/cert-manager', binary_path=kubectl_path) }}"
+      apply: true
+      server_side_apply:
+        field_manager: kubectl
+
+  - name: Wait for certificate webhook
+    kubernetes.core.k8s_info:
+      api_version: apps/v1
+      kind: Deployment
+      namespace: cert-manager
+      name: cert-manager-webhook
+      wait: true
+      wait_timeout: 180
+      wait_condition:
+        type: Available
+        status: 'True'
+
+  - name: Install PostgreSQL and RabbitMQ operators
+    kubernetes.core.k8s:
+      definition: "{{ lookup('kubernetes.core.kustomize', dir=infrastructure_root + '/bootstrap/operators/' + item, binary_path=kubectl_path) }}"
+      apply: true
+      server_side_apply:
+        field_manager: kubectl
+    loop: [postgresql, rabbitmq]
+
+  - name: Wait for database and broker controllers
+    kubernetes.core.k8s_info:
+      api_version: apps/v1
+      kind: Deployment
+      namespace: "{{ item.namespace }}"
+      name: "{{ item.name }}"
+      wait: true
+      wait_timeout: 180
+      wait_condition:
+        type: Available
+        status: 'True'
+    loop:
+    - {namespace: cnpg-system, name: cnpg-controller-manager}
+    - {namespace: rabbitmq-system, name: rabbitmq-cluster-operator}
+
+  - name: Install Argo CD
+    kubernetes.core.k8s:
+      definition: "{{ lookup('kubernetes.core.kustomize', dir=infrastructure_root + '/bootstrap/argocd', binary_path=kubectl_path) }}"
+      apply: true
+      server_side_apply:
+        field_manager: sellgar-bootstrap
+
+  - name: Wait for the Argo CD API and repository server
+    kubernetes.core.k8s_info:
+      api_version: apps/v1
+      kind: Deployment
+      namespace: argocd
+      name: "{{ item }}"
+      wait: true
+      wait_timeout: 180
+      wait_condition:
+        type: Available
+        status: 'True'
+    loop: [argocd-server, argocd-repo-server]
+
+- name: Configure private Helm repository access
+  ansible.builtin.import_playbook: registry.yml
+
+- name: Preserve or provision the DNS API credential
+  ansible.builtin.import_playbook: dns.yml
+
+- name: Connect the environment to GitOps
+  hosts: control
+  gather_facts: false
+  vars:
+    infrastructure_root: "{{ playbook_dir | dirname }}"
+  module_defaults:
+    group/kubernetes.core.k8s:
+      kubeconfig: "{{ kubeconfig_path }}"
+  tasks:
+  - name: Install the REG.RU cert-manager webhook
+    kubernetes.core.k8s:
+      definition: "{{ lookup('kubernetes.core.kustomize', dir=infrastructure_root + '/bootstrap/operators/regru', binary_path=kubectl_path) }}"
+      apply: true
+
+  - name: Wait for the DNS webhook
+    kubernetes.core.k8s_info:
+      api_version: apps/v1
+      kind: Deployment
+      namespace: cert-manager
+      name: regru-webhook
+      wait: true
+      wait_timeout: 180
+      wait_condition:
+        type: Available
+        status: 'True'
+
+  - name: Install the root development application
+    kubernetes.core.k8s:
+      definition: "{{ lookup('kubernetes.core.kustomize', dir=infrastructure_root + '/bootstrap/dev', binary_path=kubectl_path) }}"
+      apply: true

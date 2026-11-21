@@ -1,0 +1,2 @@
+- name: Prepare Kubernetes nodes with the upstream K3s collection
+  ansible.builtin.import_playbook: k3s.orchestration.site

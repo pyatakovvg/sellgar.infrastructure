@@ -1,0 +1,14 @@
+collections:
+- name: https://github.com/k3s-io/k3s-ansible.git
+  type: git
+  version: f6b040a12d75bc4f0e18ae0de72435b2ef7cede7
+- name: kubernetes.core
+  version: 6.2.0
+- name: community.general
+  version: 14.0.1
+- name: ansible.posix
+  version: 2.2.2
+- name: ansible.utils
+  version: 6.1.1
+- name: community.library_inventory_filtering_v1
+  version: 1.1.5

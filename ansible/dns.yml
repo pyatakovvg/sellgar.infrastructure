@@ -1,0 +1,15 @@
+- name: Provision REG.RU DNS API access from Ansible Vault variables
+  hosts: control
+  gather_facts: false
+  module_defaults:
+    group/kubernetes.core.k8s:
+      kubeconfig: "{{ kubeconfig_path }}"
+  tasks:
+  - name: Preserve existing DNS access or create it from private variables
+    ansible.builtin.include_tasks: tasks/secret.yml
+    vars:
+      secret_name: regru-api
+      secret_namespace: cert-manager
+      secret_values:
+        username: "{{ regru_username }}"
+        password: "{{ regru_password }}"

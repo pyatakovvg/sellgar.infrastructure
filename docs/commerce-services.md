@@ -14,20 +14,12 @@ Cart и File используют явные миграции; Job выполн�
 `synchronize` отключён. Новые базы создаёт CloudNativePG из template0 с UTF8 и
 C.UTF-8; каждая роль ограничена собственной базой и не является superuser.
 
-`bootstrap/dev/create-platform-secrets.py` создаёт только отсутствующие Secrets;
-пароли генерируются в памяти и не выводятся. После запуска MinIO выполнить:
+`ansible/secrets.yml` создаёт только отсутствующие Secrets; существующие значения
+сохраняются. SeaweedFS создаёт бакет `sellgar` штатным hook официального Helm chart,
+а S3 identities получает из конфигурации с Secret env refs. Media ограничен своим
+бакетом и не получает административные credentials. Подробнее: [SeaweedFS](seaweedfs.md).
 
-```bash
-python3 bootstrap/dev/initialize-media.py /path/to/kubectl --kubeconfig /path/to/kubeconfig
-```
-
-Bootstrap сохраняет существующие объекты и пользователей. Создаёт отсутствующий
-бакет и отдельного пользователя с политикой только на этот бакет. Media не
-получает root credentials. Повторный запуск проверяет тот же доступ без смены
-паролей. Если существующий пользователь не соответствует Secret, bootstrap
-завершается ошибкой, не перезаписывая его пароль.
-
-Ingress Media публикует только `/images` на `https://dev.sellgar.ru`. Загрузка
+Ingress Media публикует только `/images` на `https://cdn.dev.sellgar.ru`. Загрузка
 `/internal/objects` доступна admin gateway по `http://media-service:8080`;
 внешнего Ingress к этому пути нет. File и Cart Ingress не имеют.
 

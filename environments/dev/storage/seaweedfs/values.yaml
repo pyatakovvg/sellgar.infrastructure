@@ -1,0 +1,74 @@
+global:
+  seaweedfs:
+    createClusterRole: false
+    automountServiceAccountToken: false
+image:
+  tag: 4.54@sha256:e7d4b80af9bd49b2630a60ac6fbb7ffb620ac6a2c501f689c22a71b9f89f0203
+master:
+  enabled: false
+  volumeSizeLimitMB: 1024
+volume:
+  enabled: false
+  dataDirs:
+  - name: data
+    maxVolumes: 4
+filer:
+  enabled: false
+s3:
+  enabled: false
+admin:
+  enabled: false
+allInOne:
+  enabled: true
+  replicas: 1
+  data:
+    type: persistentVolumeClaim
+    size: 10Gi
+    storageClass: local-path
+    annotations:
+      helm.sh/resource-policy: keep
+  s3:
+    enabled: true
+    enableAuth: true
+    existingConfigSecret: seaweedfs-s3-config
+    createBuckets:
+    - name: sellgar
+      anonymousRead: false
+  secretExtraEnvironmentVars:
+    S3_MEDIA_ACCESS_KEY:
+      secretKeyRef:
+        name: media-storage
+        key: username
+    S3_MEDIA_SECRET_KEY:
+      secretKeyRef:
+        name: media-storage
+        key: password
+    S3_ADMIN_ACCESS_KEY:
+      secretKeyRef:
+        name: minio-root
+        key: username
+    S3_ADMIN_SECRET_KEY:
+      secretKeyRef:
+        name: minio-root
+        key: password
+  podSecurityContext:
+    enabled: true
+    runAsUser: 1000
+    runAsGroup: 1000
+    fsGroup: 1000
+    runAsNonRoot: true
+    seccompProfile:
+      type: RuntimeDefault
+  containerSecurityContext:
+    enabled: true
+    allowPrivilegeEscalation: false
+    readOnlyRootFilesystem: true
+    capabilities:
+      drop:
+      - ALL
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      memory: 1Gi

@@ -13,3 +13,4 @@ spec:
   dnsNames:
   - dev.sellgar.ru
   - admin.dev.sellgar.ru
+  - cdn.dev.sellgar.ru

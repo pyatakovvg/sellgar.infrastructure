@@ -62,17 +62,15 @@ cert-manager поддерживает внешние DNS-провайдеры ч
 регистратора выполняется владельцем отдельно; установка cert-manager этих прав
 не предоставляет.
 
-Владелец вводит логин и альтернативный API-пароль в своём терминале:
+Для новой среды владелец задаёт `regru_username` и `regru_password` в файле
+Ansible Vault. Затем выполняет из `ansible/`:
 
 ```bash
-python3 bootstrap/operators/regru/create-api-secret.py \
-  "$HOME/.local/share/sellgar/vm/sellgar-k3s/bin/kubectl" \
-  --kubeconfig "$HOME/.local/share/sellgar/vm/sellgar-k3s/kubeconfig"
+ansible-playbook -i inventory/dev.yml dns.yml --ask-vault-pass -e @../.local/dev-vault.yml
 ```
 
-Команда запускается из корня инфраструктурного репозитория. Пароль вводится
-скрыто; содержимое Secret передаётся в kubectl через stdin, без временных файлов,
-аргументов с паролем и вывода значений. Существующий Secret не перезаписывается.
+Существующий Secret сохраняется; новые значения не передаются в аргументах
+команды или логах. Подготовка: [Ansible](../ansible/README.md).
 
 Webhook подготовлен из chart Flant, source commit
 `f27a1e2817f0ba4d5dfde789fea2e82eb9391c2a`, образ 1.3.2 закреплён по digest.

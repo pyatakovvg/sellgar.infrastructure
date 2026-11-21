@@ -8,6 +8,7 @@ metadata:
 spec:
   sourceRepos:
   - https://github.com/pyatakovvg/sellgar.infrastructure.git
+  - https://seaweedfs.github.io/seaweedfs/helm
   destinations:
   - server: https://kubernetes.default.svc
     namespace: sellgar-dev
@@ -24,5 +25,17 @@ spec:
     kind: RabbitmqCluster
   - group: apps
     kind: StatefulSet
+  - group: apps
+    kind: Deployment
+  - group: batch
+    kind: Job
+  - group: ''
+    kind: ConfigMap
+  - group: ''
+    kind: Secret
+  - group: ''
+    kind: PersistentVolumeClaim
+  - group: ''
+    kind: ServiceAccount
   - group: ''
     kind: Service

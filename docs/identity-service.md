@@ -13,7 +13,7 @@ its separate `identity_srv` database; reclaim policy retains it. The PostgreSQL
 operator reconciles role before database creation succeeds. App migration Job
 uses this database owner, never the personal operator account or postgres.
 
-Run `bootstrap/dev/create-platform-secrets.py` before synchronization. It creates
+Run `ansible-playbook -i inventory/dev.yml secrets.yml` from `ansible/` before synchronization. It creates
 missing `identity-database` and `identity-auth`, preserving existing credentials.
 The app receives database/broker passwords and three Identity keys from Secrets;
 non-secret values are mounted as `/app/.env` from service-owned Helm ConfigMap.

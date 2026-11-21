@@ -1,0 +1,35 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: dev-seaweedfs
+  namespace: argocd
+spec:
+  project: sellgar-platform-dev
+  sources:
+  - repoURL: https://seaweedfs.github.io/seaweedfs/helm
+    chart: seaweedfs
+    targetRevision: 4.54.0
+    helm:
+      releaseName: seaweedfs
+      valueFiles:
+      - $values/environments/dev/storage/seaweedfs/values.yaml
+  - repoURL: https://github.com/pyatakovvg/sellgar.infrastructure.git
+    targetRevision: development
+    ref: values
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: sellgar-dev
+  # Chart 4.54.0 renders an unused SFTP Secret even when SFTP is disabled.
+  # Ignore its generated data so Argo does not rotate unused keys on every diff.
+  ignoreDifferences:
+  - group: ''
+    kind: Secret
+    name: seaweedfs-sftp-secret
+    jsonPointers:
+    - /data
+  syncPolicy:
+    automated:
+      prune: false
+      selfHeal: true
+    syncOptions:
+    - RespectIgnoreDifferences=true

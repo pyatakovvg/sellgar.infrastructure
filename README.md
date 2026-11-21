@@ -1,143 +1,79 @@
 # Sellgar Infrastructure
 
-Желаемое состояние двух сред Sellgar: `dev` в локальной K3s VM и `prod` на VPS.
-Обе среды описаны отдельными каталогами. Рабочая ветка — `development`,
-ветка выпуска — `master`.
+Репозиторий хранит подготовку узлов, bootstrap Kubernetes и желаемое состояние
+платформы. Рабочая ветка — `development`, выпуск — `master`.
+Dev работает в локальной K3s VM; prod на VPS пока не развёрнут.
 
-Product первым переводится на прямую доставку из GitHub Actions через общий
-reusable workflow и Helm. Его полный цикл, первоначальное включение и границы
-проверок: [Product delivery](docs/product-delivery.md). Остальные приложения
-сохраняют действующую Helm OCI/Argo доставку. Наличие файлов новой схемы не
-означает выполненный переход работающего кластера.
-
-## Размещение файлов
+## Владельцы конфигурации
 
 ```text
-ansible/                         подготовка серверов и K3s
-bootstrap/                       первоначальная настройка GitOps
-charts/application/             общий chart stateless HTTP-приложений
-environments/<dev|prod>/
-  platform/                      PostgreSQL, RabbitMQ, MinIO и общие компоненты
-    images.yaml                  закреплённые образы на этапе подготовки
-  services/<service>/
-    application.yaml             источник chart и назначение Argo CD
-docs/
-  platform-images.md             происхождение образов и результаты проверок
+ansible/                         upstream K3s collection и bootstrap playbooks
+bootstrap/                       закреплённые manifests операторов и Argo CD
+charts/application/             общий chart приложений
+environments/dev/
+  platform/                      PostgreSQL, RabbitMQ, сертификаты, S3 identity refs
+  storage/seaweedfs/              официальный SeaweedFS chart и dev values
+  services/<service>/             Argo CD Applications
+environments/prod/               подготовка будущей prod-среды
+docs/                            эксплуатация и результаты переходов
 ```
 
-Сейчас реализован этап подготовки образов: `platform/images.yaml` для двух сред.
-Это inventory, а не Kubernetes manifests и не готовый Helm release.
-Остальные каталоги создаются вместе с соответствующей реализацией.
-Файлы `images.yaml` не нужно применять через `kubectl apply`.
+Приложение хранит `helm/values.app.yaml`, `helm/dev/values.yaml` и
+`helm/prod/values.yaml` в своём репозитории. ConfigMap принадлежит приложению;
+пароли поступают через Kubernetes Secret refs. В инфраструктурном Git нет
+копий values приложений, kubeconfig, Docker config или plaintext credentials.
 
-Общий chart находится в `charts/application/`. Приложение хранит общие values
-в `helm/values.app.yaml`, а параметры dev/prod и ConfigMap — в
-`helm/<environment>/values.yaml` своего репозитория. Это принятая структура по
-примеру `payment-terminal.app.ui/helm`. Kubernetes templates в каждом приложении
-не дублируются. Для Helm OCI доставки CI включает общий chart и values в версионный пакет GHCR.
-Argo CD следит за пакетами среды; инфраструктурный Git не меняется при каждом выпуске.
-Контракт: [helm-delivery.md](docs/helm-delivery.md). Админка переведена на этот механизм;
-остальные приложения пока используют прежние multi-source Applications с закреплённым digest.
-Конфигурация операторов и общих хранилищ принадлежит `platform/`.
+## Подготовка инфраструктуры
 
-## Образы
+Используется [Ansible](ansible/README.md): готовая коллекция `k3s.orchestration`
+и модули `kubernetes.core`. Подготовка сервера отделена от установки операторов
+и GitOps. Повторный bootstrap сохраняет существующие пароли.
 
-PostgreSQL использует образ CloudNativePG для будущего запуска через оператор.
-RabbitMQ использует официальный образ с management plugin.
-MinIO и `mc` сохранены в GHCR из имеющихся образов без пересборки.
-Версии и digest перечислены в `environments/<environment>/platform/images.yaml`.
+CloudNativePG управляет отдельными базами и ролями сервисов; RabbitMQ Cluster
+Operator управляет брокером и его первоначальной учётной записью. Общие компоненты
+среды находятся в `platform/`. Они используют постоянные local-path PVC;
+`dev-platform` не удаляет их автоматически при изменении inventory.
 
-Inventory среды меняется отдельно: обновление dev не должно автоматически менять prod.
-Продвижение переносит проверенный digest без повторной сборки.
-На этапе реализации Helm/операторов закреплённые ссылки станут параметрами
-развёртывания; отдельную несинхронизированную копию inventory сохранять не нужно.
+Dev-хранилище — [SeaweedFS](docs/seaweedfs.md) из официального Helm chart.
+Оно доступно только внутри Kubernetes. Media имеет доступ к бакету `sellgar`;
+браузер получает изображения через публичный read endpoint Media.
+Историческое имя административного Secret `minio-root` сохранено при переходе,
+чтобы не ротировать credentials. Это не означает использование MinIO.
 
-Данные с локальной машины не переносятся: инфраструктура создаётся с пустыми
-хранилищами и новыми credentials. Образы содержат исполняемые программы.
+Бизнес-сиды и воспроизведение проекций не входят в bootstrap и будут разобраны
+отдельно. `bootstrap/dev/initialize-store.py` — отложенный legacy-инструмент;
+Ansible и CI его не вызывают.
 
-Для закрытых GHCR packages кластеру потребуется доступ на чтение через Secret.
-Авторизация Docker на рабочей машине автоматически в K3s не передаётся.
-Значения Secrets и Docker config в этот репозиторий не добавляются.
+## Доставка приложений
 
-## Текущий результат
+Product использует [отдельные видимые jobs](docs/product-delivery.md) общего
+GitHub reusable workflow: build → publish → параллельно test/migrate → deploy.
+Build/test выполняются на GitHub, migrate/deploy требуют private runner.
+Argo CD не должен управлять теми же ресурсами после перехода Product на Helm CI.
+Наличие workflow не означает установленный runner или завершённую передачу управления.
 
-Получение образов и проверки на пустых временных хранилищах описаны
-в [platform-images.md](docs/platform-images.md).
-MinIO из этого inventory предназначен для текущей локальной отработки;
-перед production требуется обновление с исправлением безопасности.
-Файлы prod пока фиксируют базовый набор образов и не запускают deployment.
+Остальные приложения сохраняют [Helm OCI delivery](docs/helm-delivery.md): CI
+публикует образ и пакет своей среды, Argo CD отслеживает диапазон версий.
+Коммит в infrastructure на каждый выпуск приложения не нужен.
+Prod promotion выполняется вручную с проверенным digest, без пересборки.
 
-Следующий этап — установка операторов PostgreSQL и RabbitMQ, конфигурация MinIO,
-PersistentVolumes и Secrets для dev, затем подключение GitOps.
-Общий chart подготовлен и описан в [charts/application/README.md](charts/application/README.md).
-Bootstrap Argo CD находится в `bootstrap/argocd`, корневой dev Application —
-в `bootstrap/dev`. Порядок установки: [bootstrap/README.md](bootstrap/README.md).
-Dev Application админки находится в `environments/dev/services/admin-ui/`;
-обновление версии и проверки описаны в [docs/admin-ui.md](docs/admin-ui.md).
-Dev-подключение витрины описано в [docs/storefront.md](docs/storefront.md).
-Ansible и deployment backend-сервисов пока не подключены.
+## Доступ
 
-## Development platform and credentials
+- Админка: `https://admin.dev.sellgar.ru`.
+- Витрина: `https://dev.sellgar.ru`.
+- Изображения: `https://cdn.dev.sellgar.ru/images/<fileUuid>`.
+- Будущий production CDN: `https://cdn.sellgar.ru`; prod не подключается автоматически.
 
-`environments/dev/platform/` deploys PostgreSQL (CloudNativePG), RabbitMQ
-(Cluster Operator), and MinIO with fresh local-path PVCs. All endpoints are
-ClusterIP-only. Data is retained independently of application releases;
-`dev-platform` intentionally disables automated pruning.
+HTTPS: [cert-manager / Let's Encrypt](docs/dev-https.md).
+Постоянные туннели PostgreSQL, RabbitMQ UI, Admin и Client gateway описаны
+в [bootstrap/README.md](bootstrap/README.md#постоянные-туннели-dev-среды).
+Туннели независимы от watcher и агентской сессии.
 
-First install `bootstrap/operators/` in documented order. Then run
-`python3 bootstrap/dev/create-platform-secrets.py kubectl --kubeconfig <path>`.
-This creates missing random credentials directly in Kubernetes and preserves
-existing Secrets. PostgreSQL bootstraps `socket_srv` database/owner from
-`socket-database`; RabbitMQ operator creates `rabbitmq-default-user`.
-`socket-auth` is shared by all three gateway ticket implementations;
-`admin-auth` is admin fingerprint signing, `minio-root` is storage administration.
-Private GHCR images require a separately provisioned `ghcr-pull` dockerconfigjson
-Secret with registry pull access. Never commit Docker config or credentials.
-Changing a Secret does not itself rotate database/broker passwords; rotation
-must update both the owning platform and clients deliberately.
+HTTP приложений и их внутренних Services — 8080. PostgreSQL, RabbitMQ и S3
+используют штатные протокольные порты; SeaweedFS S3 — 8333.
+Базы, брокер, S3 и административные консоли не публикуются через Ingress.
 
-The app chart accepts literal env values or `valueFrom.secretKeyRef`. ConfigMaps
-contain only non-secret `.env` data. Socket migration runs as a Sync hook after
-its ConfigMap (wave -2) and before Deployment (wave 0). Migration failure blocks
-rollout; the old ready deployment remains available during a normal upgrade.
-Traefik strips `/api/admin` and `/api/client`; `/socket.io` is preserved for
-physical channel paths. Kubernetes readiness removes unready pods from routing.
-Socket transports are WebSocket-only and require no polling sticky sessions.
-
-Local dev PostgreSQL, RabbitMQ UI and Admin/Client gateway connections are managed
-by the persistent user systemd target `sellgar-dev-tunnels.target`, independent of
-application watchers and terminals. Installation and ports:
-[dev tunnels](bootstrap/README.md#постоянные-туннели-dev-среды).
-For other administrative connections use authenticated `kubectl port-forward` or SSH tunnel,
-not public database/broker/MinIO console Ingress. Examples:
-`kubectl -n sellgar-dev port-forward service/postgresql-rw 15432:5432`,
-`kubectl -n sellgar-dev port-forward service/rabbitmq 15674:15672`,
-`kubectl -n sellgar-dev port-forward service/minio 19001:9001`.
-Retrieve credentials through your authorized Kubernetes client; never paste them
-into issues or logs. These manifests do not provision domain service databases
-or restore any existing host data.
-
-Internal application HTTP listeners and ClusterIP Services use port `8080`.
-The chart derives the Service port from `applicationPort` (default `8080`);
-Ingress routes use its named `http` port. Internal app URLs include `:8080`.
-Infrastructure protocols retain their standard ports. Local host development
-ports remain distinct so applications can run together outside Kubernetes.
-
-## Identity development deployment
-
-Identity service is configured in `environments/dev/services/identity-service/`.
-CloudNativePG owns its separate database/role, Secrets are bootstrapped without
-Git values, and the service migrates before rollout. Fresh installation and the
-explicitly requested one-account import are described in [docs/identity-service.md](docs/identity-service.md).
-
-Shop follows the same deployment contract in `environments/dev/services/shop-service/`
-and has its own database/role `shop_srv`. Details and checks:
-[docs/shop-service.md](docs/shop-service.md).
-
-Product service: [dev deployment](docs/product-service.md), отдельная база `product_srv_v2`.
-
-Store service: [dev deployment](docs/store-service.md), отдельная база `store_srv` с Unicode locale.
-
-Cart, File и Media: [dev deployment](docs/commerce-services.md). Автоматическая доставка всех приложений: [Helm OCI](docs/helm-delivery.md).
-
-HTTPS для `dev.sellgar.ru` и `admin.dev.sellgar.ru`: [cert-manager и Let’s Encrypt](docs/dev-https.md).
+Операционные документы: [Identity](docs/identity-service.md),
+[Shop](docs/shop-service.md), [Product](docs/product-service.md),
+[Store](docs/store-service.md), [Cart/File/Media](docs/commerce-services.md),
+[Admin UI](docs/admin-ui.md), [Storefront](docs/storefront.md).

@@ -1,0 +1,51 @@
+- name: Configure the existing registry access for Argo CD
+  hosts: control
+  gather_facts: false
+  module_defaults:
+    group/kubernetes.core.k8s:
+      kubeconfig: "{{ kubeconfig_path }}"
+  tasks:
+  - name: Preserve or provision registry access from private variables
+    ansible.builtin.include_tasks: tasks/secret.yml
+    vars:
+      secret_name: ghcr-pull
+      secret_type: kubernetes.io/dockerconfigjson
+      secret_values:
+        .dockerconfigjson: "{{ {'auths': {'ghcr.io': {'auth': ((registry_username + ':' + registry_password) | b64encode)}}} | to_json }}"
+
+  - name: Read the registry pull credential
+    kubernetes.core.k8s_info:
+      api_version: v1
+      kind: Secret
+      name: ghcr-pull
+      namespace: "{{ kubernetes_namespace }}"
+    register: registry_secret
+    no_log: true
+
+  - name: Require the explicitly provisioned registry credential
+    ansible.builtin.assert:
+      that: registry_secret.resources | length == 1
+      fail_msg: Create ghcr-pull from the registry credential before configuring Argo CD.
+
+  - name: Register the OCI Helm repository using the existing credential
+    kubernetes.core.k8s:
+      definition:
+        apiVersion: v1
+        kind: Secret
+        metadata:
+          name: sellgar-helm-ghcr
+          namespace: argocd
+          labels:
+            argocd.argoproj.io/secret-type: repository
+        stringData:
+          type: helm
+          name: sellgar-helm-ghcr
+          url: ghcr.io/pyatakovvg/helm
+          enableOCI: 'true'
+          username: "{{ registry_credential[0] }}"
+          password: "{{ registry_credential[1] }}"
+    vars:
+      registry_auths: "{{ (registry_secret.resources[0].data['.dockerconfigjson'] | b64decode | from_json).auths }}"
+      registry_auth: "{{ registry_auths.get('ghcr.io', registry_auths.get('https://ghcr.io')) }}"
+      registry_credential: "{{ (registry_auth.auth | b64decode).split(':', 1) if 'auth' in registry_auth else [registry_auth.username, registry_auth.password] }}"
+    no_log: true

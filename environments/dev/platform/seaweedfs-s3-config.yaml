@@ -1,0 +1,22 @@
+apiVersion: v1
+kind: Secret
+metadata:
+  name: seaweedfs-s3-config
+type: Opaque
+stringData:
+  # Only references are stored here; credentials come from existing Secret env refs.
+  seaweedfs_s3_config: |
+    {
+      "identities": [
+        {
+          "name": "storage-admin",
+          "credentials": [{"accessKey": "${S3_ADMIN_ACCESS_KEY}", "secretKey": "${S3_ADMIN_SECRET_KEY}"}],
+          "actions": ["Admin", "Read", "Write", "List", "Tagging"]
+        },
+        {
+          "name": "sellgar-media",
+          "credentials": [{"accessKey": "${S3_MEDIA_ACCESS_KEY}", "secretKey": "${S3_MEDIA_SECRET_KEY}"}],
+          "actions": ["Read:sellgar", "Write:sellgar", "List:sellgar", "Tagging:sellgar"]
+        }
+      ]
+    }

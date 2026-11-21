@@ -18,7 +18,7 @@ Argo CD к этому OCI repository. Версионный диапазон `>=0
 Корневой Application `sellgar-dev` управляет самим подключением, а новые выпуски
 админки доставляются через GHCR. Secret `argocd/sellgar-helm-ghcr` предоставляет
 repo-server чтение приватных Helm-пакетов; пароль не хранится в Git.
-Настройка выполняется `bootstrap/dev/configure-helm-repository.py` с использованием
+Настройка выполняется `ansible/registry.yml` с использованием
 существующего read credential `sellgar-dev/ghcr-pull`, только с разрешения владельца.
 
 Полный контракт и порядок выпуска: [helm-delivery.md](helm-delivery.md).

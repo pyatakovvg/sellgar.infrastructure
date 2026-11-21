@@ -8,8 +8,7 @@ resources:
 - store-database.yaml
 - postgresql.yaml
 - rabbitmq.yaml
-- minio.yaml
-- minio-service.yaml
+- seaweedfs-s3-config.yaml
 - cart-database.yaml
 - file-database.yaml
 - letsencrypt-issuer.yaml
