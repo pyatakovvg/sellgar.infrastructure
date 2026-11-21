@@ -1,7 +1,8 @@
 # Доставка приложений
 
 Рабочая ветка — `development`. Общий контракт `delivery-v0.7.0` ставит юнит-тесты
-перед сборкой. Предыдущий контракт проверен Product run 44941272922 через organization runner.
+перед сборкой и проверен полным циклом всех 12 приложений через organization runner.
+Ссылки на CI и результаты: [organization-transition.md](organization-transition.md#проверка-delivery-v070).
 Работающий образец Product описан в [product-delivery.md](product-delivery.md).
 Перед включением CI нового приложения сначала готовится runner и выполняется
 передача управления от Argo CD к Helm. Публикация workflow не означает готовность доставки.

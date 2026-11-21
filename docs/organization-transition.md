@@ -20,7 +20,7 @@ kubeconfig. Перед удалением проверено отсутстви�
 source `0c5021d`, Helm revision 7, готовый pod и HTTP health `ok`.
 Старый Product runner снят с регистрации; его служба, Linux account и home удалены.
 В VM остался ровно один общий runner. Все 12 приложений переданы от Argo к Helm без удаления workloads и данных.
-Контракт delivery-v0.7.0 ставит unit перед build; требуется проверка новых CI каждого приложения.
+Контракт `delivery-v0.7.0` проверен всеми 12 последними CI: unit выполняется перед build. Результаты ниже.
 
 ## Решение
 
@@ -117,8 +117,8 @@ Workspace, mobile и общие библиотеки не переносятся
 - Actionlint прошёл для shared workflows и всех 12 приложений.
 - Helm lint и dev render прошли для всех 12 приложений, migration render — для
   семи приложений с БД. Это проверка конфигурации, не выполнение unit tests/миграций.
-- Полные сборки и юнит-тесты выполняются в GitHub. Для Product все пять jobs
-  успешны, migrate/deploy выполнил именно sellgar-dev. Остальные ожидают проверки.
+- Полные сборки и юнит-тесты выполнены в GitHub для всех 12 приложений.
+  Все jobs успешны; migrate/deploy выполнял только `sellgar-dev`.
 - Переход завершён только после успешного реального GitHub run каждого приложения,
   проверки digest/readiness и подтверждения одного общего Online runner.
 
@@ -140,3 +140,44 @@ Workspace, mobile и общие библиотеки не переносятся
 выполнил migrate и deploy. Ansible теперь подготавливает этот cache штатным get_url
 с checksum. Управление .env через lineinfile сохраняет остальные upstream-переменные.
 Первая загрузка миграционного образа из GHCR заняла 7m47s; Job завершилась успешно.
+
+## Проверка delivery-v0.7.0
+
+Завершено: 2026-11-21T21:04:53.860Z.
+
+С БД: `unit → build → publish → migrate → deploy`; без БД: `unit → build → publish → deploy`.
+Отдельной компонентной job нет. Порядок дополнительно проверен по started/completed timestamps
+каждой job. Unit/build/publish имеют GitHub-hosted label ubuntu-latest; все migrate/deploy
+выполнены общим runner `sellgar-dev`.
+
+| Приложение / CI | Source | Run | Результат |
+| --- | --- | --- | --- |
+| [sellgar.product.service](https://github.com/sellgar/sellgar.product.service/actions/runs/44946974831) | 3e1f91c8 | 44946974831 | success |
+| [sellgar.identity.service](https://github.com/sellgar/sellgar.identity.service/actions/runs/44946887758) | d72d057b | 44946887758 | success |
+| [sellgar.shop.service](https://github.com/sellgar/sellgar.shop.service/actions/runs/44946901061) | d4955482 | 44946901061 | success |
+| [sellgar.store.service](https://github.com/sellgar/sellgar.store.service/actions/runs/44946915735) | f8590ea4 | 44946915735 | success |
+| [sellgar.cart.service](https://github.com/sellgar/sellgar.cart.service/actions/runs/44946930749) | c548bf1d | 44946930749 | success |
+| [sellgar.file.service](https://github.com/sellgar/sellgar.file.service/actions/runs/44946946180) | 0070074b | 44946946180 | success |
+| [sellgar.media.service](https://github.com/sellgar/sellgar.media.service/actions/runs/44946958390) | 421474b4 | 44946958390 | success |
+| [sellgar.socket.gateway](https://github.com/sellgar/sellgar.socket.gateway/actions/runs/44946972956) | 88d2adc3 | 44946972956 | success |
+| [sellgar.admin.gateway](https://github.com/sellgar/sellgar.admin.gateway/actions/runs/44946986988) | 73b44d4d | 44946986988 | success |
+| [sellgar.client.gateway](https://github.com/sellgar/sellgar.client.gateway/actions/runs/44946999948) | 20c43414 | 44946999948 | success |
+| [sellgar.ui.admin](https://github.com/sellgar/sellgar.ui.admin/actions/runs/44947360044) | fd14f66f | 44947360044 | success |
+| [sellgar.ui.desktop](https://github.com/sellgar/sellgar.ui.desktop/actions/runs/44947372785) | 94dd1db0 | 44947372785 | success |
+
+Проверка отказа: [Product run 44946873726](https://github.com/sellgar/sellgar.product.service/actions/runs/44946873726)
+завершился ошибкой unit; images и delivery пропущены. PostgreSQL image test был ошибочно
+назван обычным spec и переименован в integration.spec без изменения проверок. Последний run выше успешен.
+
+Runtime: все 12 Deployment имеют точный source SHA из таблицы и по одной ready/available/updated
+реплике, старые pod завершены. Все 12 HTTP readiness paths отвечают 200; Helm status deployed
+у 12 приложений и SeaweedFS. Argo содержит только корневое подключение, platform и SeaweedFS;
+все три Synced/Healthy. HTTPS витрины, runtime config админки и существующего CDN image проверен
+без отключения проверки сертификатов. В config.js указан `https://cdn.dev.sellgar.ru/images`.
+
+При проверке исправлены относительный URL outbox submodule Shop, тестовый Node loader
+фреймворка для JavaScript subpaths, устаревшая inventory fixture Admin и imagePullSecrets
+двух UI. Тесты вложенных библиотек не запускаются командой unit родительской админки.
+Ни один обязательный unit test не переведён в skip/continue-on-error ради доставки.
+Старый неиспользуемый Helm OCI/Python packager удалён; `initialize-store.py` отложен отдельно
+по решению владельца и не вызывается новым CI или Ansible.
