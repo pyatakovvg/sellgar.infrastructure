@@ -1,0 +1,192 @@
+name: Deliver service
+
+on:
+  workflow_call:
+    inputs:
+      environment:
+        type: string
+        required: true
+      namespace:
+        type: string
+        required: true
+      release-name:
+        type: string
+        required: true
+      source-revision:
+        type: string
+        required: true
+      chart-revision:
+        type: string
+        required: true
+      image-digest:
+        type: string
+        required: true
+      migration-image-digest:
+        type: string
+        required: true
+    secrets:
+      SUBMODULES_READ_TOKEN:
+        required: false
+
+permissions:
+  contents: read
+
+defaults:
+  run:
+    shell: bash
+
+concurrency:
+  group: delivery-${{ github.repository }}-${{ inputs.environment }}
+  cancel-in-progress: false
+
+env:
+  TARGET_NAMESPACE: ${{ inputs.namespace }}
+  RELEASE_NAME: ${{ inputs.release-name }}
+  SOURCE_REVISION: ${{ inputs.source-revision }}
+  CHART_REVISION: ${{ inputs.chart-revision }}
+  IMAGE_DIGEST: ${{ inputs.image-digest }}
+  MIGRATION_DIGEST: ${{ inputs.migration-image-digest }}
+  RELEASE_ID: ${{ github.run_id }}-${{ github.run_attempt }}
+  TARGET_ENVIRONMENT: ${{ inputs.environment }}
+
+jobs:
+  test:
+    name: Component tests
+    if: >-
+      (github.event_name == 'push' && github.ref == 'refs/heads/development' && inputs.environment == 'dev') ||
+      (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/master' && inputs.environment == 'prod')
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: ${{ inputs.source-revision }}
+          submodules: recursive
+          token: ${{ secrets.SUBMODULES_READ_TOKEN || github.token }}
+          persist-credentials: false
+      - name: Run component tests
+        run: docker build --platform linux/amd64 --target tests --progress plain .
+
+  migrate:
+    if: >-
+      (github.event_name == 'push' && github.ref == 'refs/heads/development' && inputs.environment == 'dev') ||
+      (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/master' && inputs.environment == 'prod')
+    runs-on: [self-hosted, linux, x64, 'sellgar-${{ inputs.environment }}']
+    environment: ${{ inputs.environment }}
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: ${{ inputs.source-revision }}
+          path: source
+          sparse-checkout: helm
+          persist-credentials: false
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          repository: pyatakovvg/sellgar.infrastructure
+          ref: ${{ inputs.chart-revision }}
+          path: infrastructure
+          sparse-checkout: charts/application
+          persist-credentials: false
+      - uses: azure/setup-helm@9bc31f4ebc9c6b171d7bfbaa5d006ae7abdb4310 # v5.0.1
+        with:
+          version: v4.3.2
+      - uses: azure/setup-kubectl@776406bce94f63e41d621b960d78ee25c8b76ede # v4.0.1
+        with:
+          version: v1.37.2
+      - name: Check target and previous operation
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          [[ "$SOURCE_REVISION" =~ ^[0-9a-f]{40}$ ]]
+          [[ "$CHART_REVISION" =~ ^[0-9a-f]{40}$ ]]
+          [[ "$IMAGE_DIGEST" =~ ^sha256:[0-9a-f]{64}$ ]]
+          [[ "$MIGRATION_DIGEST" =~ ^sha256:[0-9a-f]{64}$ ]]
+          [[ "$RELEASE_NAME" =~ ^[a-z][a-z0-9-]{0,35}$ ]]
+          test "$TARGET_NAMESPACE" = "sellgar-$TARGET_ENVIRONMENT"
+          test "$(gh api "repos/$GITHUB_REPOSITORY/commits/$GITHUB_REF_NAME" --jq .sha)" = "$GITHUB_SHA"
+          status=$(helm list -n "$TARGET_NAMESPACE" --filter "^$RELEASE_NAME$" -o json | jq -r '.[0].status // ""')
+          if [[ "$status" == pending-* ]]; then
+            printf 'Helm operation is still pending. Inspect the release before retrying.\n' >&2
+            exit 1
+          fi
+          deployment=$(kubectl -n "$TARGET_NAMESPACE" get deployment "$RELEASE_NAME" --ignore-not-found -o json)
+          if [[ -n "$deployment" ]]; then
+            test "$(jq -r '.metadata.annotations["meta.helm.sh/release-name"] // ""' <<< "$deployment")" = "$RELEASE_NAME"
+          fi
+          previous=$(kubectl -n "$TARGET_NAMESPACE" get job "$RELEASE_NAME-migration" --ignore-not-found -o json)
+          if [[ -n "$previous" ]]; then
+            if ! jq -e 'any(.status.conditions[]?; .status == "True" and (.type == "Complete" or .type == "Failed"))' <<< "$previous"; then
+              printf 'Previous migration is still running. Wait for its terminal state before retrying.\n' >&2
+              exit 1
+            fi
+          fi
+      - name: Create migration Job
+        run: |
+          helm template "$RELEASE_NAME-migration" infrastructure/charts/application \
+            --namespace "$TARGET_NAMESPACE" \
+            -f source/helm/values.app.yaml -f "source/helm/$TARGET_ENVIRONMENT/values.yaml" \
+            --set workload=migration --set-string releaseId="$RELEASE_ID" \
+            --set-string sourceRevision="$SOURCE_REVISION" \
+            --set-string migration.image.digest="$MIGRATION_DIGEST" > "$RUNNER_TEMP/migration.yaml"
+          kubectl -n "$TARGET_NAMESPACE" delete job "$RELEASE_NAME-migration" --ignore-not-found --wait=true
+          kubectl -n "$TARGET_NAMESPACE" apply -f "$RUNNER_TEMP/migration.yaml"
+      - name: Wait for migration
+        run: kubectl -n "$TARGET_NAMESPACE" wait --for=condition=complete "job/$RELEASE_NAME-migration" --timeout=620s
+      - name: Migration logs
+        if: always()
+        run: |
+          kubectl -n "$TARGET_NAMESPACE" logs "job/$RELEASE_NAME-migration" --all-containers --timestamps --pod-running-timeout=5s || true
+          kubectl -n "$TARGET_NAMESPACE" get job "$RELEASE_NAME-migration" || true
+
+  deploy:
+    needs: [test, migrate]
+    runs-on: [self-hosted, linux, x64, 'sellgar-${{ inputs.environment }}']
+    environment: ${{ inputs.environment }}
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: ${{ inputs.source-revision }}
+          path: source
+          sparse-checkout: helm
+          persist-credentials: false
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          repository: pyatakovvg/sellgar.infrastructure
+          ref: ${{ inputs.chart-revision }}
+          path: infrastructure
+          sparse-checkout: charts/application
+          persist-credentials: false
+      - uses: azure/setup-helm@9bc31f4ebc9c6b171d7bfbaa5d006ae7abdb4310 # v5.0.1
+        with:
+          version: v4.3.2
+      - uses: azure/setup-kubectl@776406bce94f63e41d621b960d78ee25c8b76ede # v4.0.1
+        with:
+          version: v1.37.2
+      - name: Reject superseded release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: test "$(gh api "repos/$GITHUB_REPOSITORY/commits/$GITHUB_REF_NAME" --jq .sha)" = "$GITHUB_SHA"
+      - name: Deploy application
+        run: |
+          helm upgrade --install "$RELEASE_NAME" infrastructure/charts/application \
+            --namespace "$TARGET_NAMESPACE" \
+            -f source/helm/values.app.yaml -f "source/helm/$TARGET_ENVIRONMENT/values.yaml" \
+            --set workload=application --set migration.enabled=false \
+            --set-string image.digest="$IMAGE_DIGEST" \
+            --set-string sourceRevision="$SOURCE_REVISION" --set-string releaseId="$RELEASE_ID" \
+            --wait --timeout=5m --history-max=10
+      - name: Verify running release
+        run: |
+          image=$(kubectl -n "$TARGET_NAMESPACE" get deployment "$RELEASE_NAME" -o jsonpath='{.spec.template.spec.containers[0].image}')
+          test "${image##*@}" = "$IMAGE_DIGEST"
+          address=$(kubectl -n "$TARGET_NAMESPACE" get service "$RELEASE_NAME" -o jsonpath='{.spec.clusterIP}')
+          curl --fail --silent --show-error --connect-timeout 5 --max-time 15 "http://$address:8080/health"
+          printf '### Deployed %s\n\nSource: `%s`\n\nImage: `%s`\n\nRelease: `%s`\n' \
+            "$RELEASE_NAME" "$SOURCE_REVISION" "$image" "$RELEASE_ID" >> "$GITHUB_STEP_SUMMARY"
+      - name: Deployment diagnostics
+        if: failure()
+        run: |
+          helm status "$RELEASE_NAME" -n "$TARGET_NAMESPACE" || true
+          kubectl -n "$TARGET_NAMESPACE" describe deployment "$RELEASE_NAME" || true

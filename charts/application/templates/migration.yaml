@@ -1,4 +1,4 @@
-{{- if .Values.migration.enabled }}
+{{- if or .Values.migration.enabled (eq .Values.workload "migration") }}
 {{- $image := .Values.image }}
 {{- if or .Values.migration.image.repository .Values.migration.image.digest }}
 {{- $image = .Values.migration.image }}
@@ -12,16 +12,25 @@
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: {{ .Release.Name }}-migration
+  name: {{ .Release.Name }}{{ if ne .Values.workload "migration" }}-migration{{ end }}
+  labels:
+    {{- include "application.labels" . | nindent 4 }}
+  {{- if ne .Values.workload "migration" }}
   annotations:
     argocd.argoproj.io/hook: Sync
     argocd.argoproj.io/sync-wave: "-1"
     argocd.argoproj.io/hook-delete-policy: BeforeHookCreation
+  {{- end }}
 spec:
   backoffLimit: {{ .Values.migration.backoffLimit }}
   activeDeadlineSeconds: {{ .Values.migration.activeDeadlineSeconds }}
   ttlSecondsAfterFinished: {{ .Values.migration.ttlSecondsAfterFinished }}
   template:
+    {{- with .Values.sourceRevision }}
+    metadata:
+      annotations:
+        sellgar.io/source-revision: {{ . | quote }}
+    {{- end }}
     spec:
       restartPolicy: Never
       automountServiceAccountToken: false
@@ -47,12 +56,27 @@ spec:
             {{- include "application.env" (dict "Values" (dict "env" (default .Values.env .Values.migration.env))) | nindent 12 }}
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
-          {{- with .Values.volumeMounts }}
+          {{- if or .Values.volumeMounts .Values.environmentFile.enabled }}
           volumeMounts:
+            {{- with .Values.volumeMounts }}
             {{- toYaml . | nindent 12 }}
+            {{- end }}
+            {{- if .Values.environmentFile.enabled }}
+            - name: environment-file
+              mountPath: /app/.env
+              subPath: .env
+              readOnly: true
+            {{- end }}
           {{- end }}
-      {{- with .Values.volumes }}
+      {{- if or .Values.volumes .Values.environmentFile.enabled }}
       volumes:
+        {{- with .Values.volumes }}
         {{- toYaml . | nindent 8 }}
+        {{- end }}
+        {{- if .Values.environmentFile.enabled }}
+        - name: environment-file
+          configMap:
+            name: {{ include "application.environmentName" . }}
+        {{- end }}
       {{- end }}
 {{- end }}

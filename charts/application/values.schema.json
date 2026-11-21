@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "properties": {
+    "workload": { "enum": ["application", "migration"] },
+    "releaseId": { "type": "string", "pattern": "^[a-z0-9-]*$", "maxLength": 32 },
+    "environmentFile": {
+      "type": "object",
+      "properties": {
+        "enabled": { "type": "boolean" },
+        "data": { "type": "string" }
+      },
+      "if": { "properties": { "enabled": { "const": true } }, "required": ["enabled"] },
+      "then": { "properties": { "data": { "minLength": 1 } }, "required": ["data"] }
+    }
+  }
+}

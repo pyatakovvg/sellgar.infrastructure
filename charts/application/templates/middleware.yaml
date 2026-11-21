@@ -1,4 +1,4 @@
-{{- if and .Values.ingress.enabled .Values.ingress.stripPrefix }}
+{{- if and (eq .Values.workload "application") .Values.ingress.enabled .Values.ingress.stripPrefix }}
 apiVersion: traefik.io/v1alpha1
 kind: Middleware
 metadata:

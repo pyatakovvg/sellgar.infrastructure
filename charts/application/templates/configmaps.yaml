@@ -1,3 +1,21 @@
+{{- if .Values.environmentFile.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "application.environmentName" . }}
+  labels:
+    {{- include "application.labels" . | nindent 4 }}
+  {{- if eq .Values.workload "application" }}
+  annotations:
+    helm.sh/resource-policy: keep
+immutable: true
+  {{- end }}
+data:
+  .env: |
+    {{- required "environmentFile.data is required" .Values.environmentFile.data | nindent 4 }}
+---
+{{- end }}
+{{- if eq .Values.workload "application" }}
 {{- range .Values.configmaps }}
 {{- if .enabled }}
 ---
@@ -12,5 +30,6 @@ metadata:
 data:
   {{ required "configmaps[].filename is required" .filename | quote }}: |
     {{- required "configmaps[].data is required" .data | nindent 4 }}
+{{- end }}
 {{- end }}
 {{- end }}

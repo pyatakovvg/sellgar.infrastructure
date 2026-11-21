@@ -11,7 +11,6 @@ resources:
 - services/admin-gateway/application.yaml
 - services/identity-service/application.yaml
 - services/shop-service/application.yaml
-- services/product-service/application.yaml
 - services/store-service/application.yaml
 - services/cart-service/application.yaml
 - services/file-service/application.yaml

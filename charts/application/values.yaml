@@ -1,4 +1,11 @@
 replicas: 1
+progressDeadlineSeconds: 300
+workload: application
+releaseId: ''
+sourceRevision: ''
+environmentFile:
+  enabled: false
+  data: ''
 
 image:
   repository: ''

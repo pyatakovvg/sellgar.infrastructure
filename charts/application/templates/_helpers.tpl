@@ -10,6 +10,14 @@ helm.sh/chart: {{ printf "%s-%s" .Chart.Name .Chart.Version | quote }}
 {{- end }}
 
 {{/* Environment values may be literals or Kubernetes valueFrom references. */}}
+{{- define "application.environmentName" -}}
+{{- if eq .Values.workload "migration" -}}
+{{ .Release.Name }}-env
+{{- else -}}
+{{ .Release.Name }}-env-{{ required "releaseId is required with environmentFile" .Values.releaseId }}
+{{- end -}}
+{{- end }}
+
 {{- define "application.env" -}}
 {{- range $name, $value := .Values.env }}
 - name: {{ $name | quote }}

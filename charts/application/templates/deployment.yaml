@@ -1,3 +1,4 @@
+{{- if eq .Values.workload "application" }}
 {{- if not (regexMatch "^sha256:[0-9a-f]{64}$" .Values.image.digest) }}
 {{- fail "image.digest must be a sha256 digest from CI" }}
 {{- end }}
@@ -11,7 +12,7 @@ spec:
   replicas: {{ .Values.replicas }}
   revisionHistoryLimit: 3
   minReadySeconds: 5
-  progressDeadlineSeconds: 180
+  progressDeadlineSeconds: {{ .Values.progressDeadlineSeconds }}
   strategy:
     type: RollingUpdate
     rollingUpdate:
@@ -26,6 +27,12 @@ spec:
         {{- include "application.selectorLabels" . | nindent 8 }}
       annotations:
         checksum/config: {{ toJson .Values.configmaps | sha256sum }}
+        {{- with .Values.sourceRevision }}
+        sellgar.io/source-revision: {{ . | quote }}
+        {{- end }}
+        {{- with .Values.releaseId }}
+        sellgar.io/release-id: {{ . | quote }}
+        {{- end }}
     spec:
       automountServiceAccountToken: false
       enableServiceLinks: false
@@ -75,11 +82,27 @@ spec:
           resources:
             {{- toYaml . | nindent 12 }}
           {{- end }}
-          {{- with .Values.volumeMounts }}
+          {{- if or .Values.volumeMounts .Values.environmentFile.enabled }}
           volumeMounts:
+            {{- with .Values.volumeMounts }}
             {{- toYaml . | nindent 12 }}
+            {{- end }}
+            {{- if .Values.environmentFile.enabled }}
+            - name: environment-file
+              mountPath: /app/.env
+              subPath: .env
+              readOnly: true
+            {{- end }}
           {{- end }}
-      {{- with .Values.volumes }}
+      {{- if or .Values.volumes .Values.environmentFile.enabled }}
       volumes:
+        {{- with .Values.volumes }}
         {{- toYaml . | nindent 8 }}
+        {{- end }}
+        {{- if .Values.environmentFile.enabled }}
+        - name: environment-file
+          configMap:
+            name: {{ include "application.environmentName" . }}
+        {{- end }}
       {{- end }}
+{{- end }}
