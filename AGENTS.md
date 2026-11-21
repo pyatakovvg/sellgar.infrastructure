@@ -5,7 +5,8 @@
 
 - Репозиторий владеет конфигурацией окружений, подготовкой узлов и GitOps bootstrap.
 - Общий переиспользуемый chart находится в `charts/application/`.
-- Product переводится на прямую Helm-доставку через `.github/workflows/deliver-service.yml`.
+- Product использует `.github/workflows/build-service.yml` для сборки/публикации
+  и `.github/workflows/deliver-service.yml` для прямой Helm-доставки.
   Этапы migrate/deploy видны в GitHub; Argo не должен управлять теми же ресурсами.
   Переход работающей среды выполняется отдельно, с сохранением ресурсов:
   `docs/product-delivery.md`. Другие сервисы сохраняют Helm OCI-доставку.

@@ -8,8 +8,8 @@ The local rewrite is not a record of an installed runner or completed handover.
 
 - Product owns Dockerfile, application/migration images, Jest tests and `helm/`
   values. No environment or secret values are built into the images.
-- Infrastructure owns `charts/application` and the reusable workflow
-  `.github/workflows/deliver-service.yml`.
+- Infrastructure owns `charts/application` and the reusable workflows
+  `.github/workflows/build-service.yml` and `.github/workflows/deliver-service.yml`.
 - Helm owns Product Deployment, Service and application ConfigMaps after handover.
   Argo continues managing the platform and other applications.
 - Kubernetes Secrets own DB, broker and image-pull credentials. The runner is a
@@ -28,6 +28,12 @@ master:      manual candidate tag → validate → delivery/[test | migrate] →
 PR:          build → tests
 ```
 
+Product `ci.yml` handles development pushes only. `checks.yml` handles PRs and
+release pushes; its jobs are not part of the development graph. Both reuse the
+same build/publication workflow rather than maintaining two build definitions.
+The development graph has exactly five executable jobs: build, publish, test,
+migrate, deploy. No PR/release-only test job is conditionally skipped in it.
+
 Build validates Helm for dev and prod and builds both images. Publication loads
 the exact image IDs exported by build. In delivery, component tests and migration
 run as independent parallel jobs. Tests run on GitHub-hosted runners with an
@@ -44,7 +50,7 @@ not rebuild the images. Stage is optional and not provisioned here.
 
 The shared chart is checked out by its recorded commit; values by the exact
 application source commit. The workflow calls and chart checkout select the
-infrastructure release `delivery-v0.5.0`. Publish that immutable GitHub Release/tag
+infrastructure release `delivery-v0.5.1`. Publish that immutable GitHub Release/tag
 before Product. Never move it; changes to the shared pipeline/chart get a new version.
 
 ## Migration and configuration
@@ -96,7 +102,7 @@ automatic database downgrade or migration rollback workflow is implemented.
 ## Enabling the pilot
 
 1. Publish the infrastructure workflow/chart as immutable release/tag
-   `delivery-v0.5.0`, then publish Product. Its workflow calls and chart checkout
+   `delivery-v0.5.1`, then publish Product. Its workflow calls and chart checkout
    already select that version. No other application's delivery reference changes.
 2. Configure the official runner and scoped Kubernetes credential as described
    in `bootstrap/runner/README.md`.
