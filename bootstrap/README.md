@@ -1,5 +1,9 @@
 # Первоначальная настройка GitOps
 
+Основной способ установки — [Ansible bootstrap](../ansible/README.md).
+Ручные команды ниже оставлены для диагностики отдельных компонентов.
+Python-обёртки создания Secrets, registry access и media bootstrap удалены.
+
 HTTPS для двух dev-доменов описан в [dev HTTPS](../docs/dev-https.md).
 `traefik/` содержит HelmChartConfig HTTP → HTTPS redirect для установленного в K3s
 Traefik. Применять его после готовности публичного сертификата и HTTPS Ingress.
