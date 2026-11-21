@@ -45,7 +45,7 @@ login manifests were checked at their pinned commits and already declare Node 24
 
 [Node 24 run 44930882276](https://github.com/pyatakovvg/sellgar.product.service/actions/runs/44930882276)
 completed all five jobs without retries or annotations in 5m 56s using
-`delivery-v0.5.2`. Helm revision 6 deployed source
+`delivery-v0.7.0`. Helm revision 6 deployed source
 `b3f96ba8f7c410c15f5b2f90d819984b351c99cd` with application digest
 `sha256:7fccbb2e2ebf3f88f4cc0a524c75cdc3d57bb51f7eca22f0b7641cf015d4c2e0`.
 One updated pod was available, and the workflow's HTTP health/digest checks passed.
@@ -68,26 +68,19 @@ GitHub App in this Product path.
 ## Sequence
 
 ```text
-development: build → publish → delivery/[test | migrate] → delivery/deploy
-release/*:   build → publish candidate → tests
-master:      manual candidate tag → validate → delivery/[test | migrate] → delivery/deploy → back-merge PR
-PR:          build → tests
+development: unit → build → publish → delivery/migrate → delivery/deploy
+release/*:   unit → build → publish candidate
+master:      manual candidate tag → validate → delivery/migrate → delivery/deploy → back-merge PR
+PR:          unit → build
 ```
 
 Product `ci.yml` handles development pushes only. `checks.yml` handles PRs and
 release pushes; its jobs are not part of the development graph. Both reuse the
 same build/publication workflow rather than maintaining two build definitions.
-The development graph has exactly five executable jobs: build, publish, test,
+The development graph has exactly five executable jobs: unit, build, publish,
 migrate, deploy. No PR/release-only test job is conditionally skipped in it.
 
-Build validates Helm for dev and prod and builds both images. Publication loads
-the exact image IDs exported by build. In delivery, component tests and migration
-run as independent parallel jobs. Tests run on GitHub-hosted runners with an
-isolated PostgreSQL, while migration runs against the target environment database.
-Deploy requires both jobs to succeed. Migration runs after publication so
-Kubernetes can pull the migration image from the registry. PR tests follow build
-without publication or access to the environment. Release candidates are eligible
-for promotion only once the entire original CI run, including tests, succeeds.
+Unit tests run first on GitHub-hosted runners from the dependency Docker stage, without building the application or starting PostgreSQL. Only the outbox dependency is compiled because its package entrypoint is dist. Database integration checks remain available separately and are not mixed into the unit job. A unit failure blocks build and publication. Build validates Helm and builds both images; publication loads the exact image IDs exported by build. Migration then runs against the target environment database, and deploy requires its success. PRs run unit then build without publication or environment access. Release candidates require the entire source CI run to succeed.
 Candidate GitHub Releases attach `release.json` containing application/migration
 digests, source revision, chart revision and successful build run. Production
 requires a published immutable release, verifies source ancestry and identical
@@ -96,7 +89,7 @@ not rebuild the images. Stage is optional and not provisioned here.
 
 The shared chart is checked out by its recorded commit; values by the exact
 application source commit. The workflow calls and chart checkout select the
-infrastructure release `delivery-v0.5.2`. Publish that immutable GitHub Release/tag
+infrastructure release `delivery-v0.7.0`. Publish that immutable GitHub Release/tag
 before Product. Never move it; changes to the shared pipeline/chart get a new version.
 
 ## Migration and configuration
@@ -136,8 +129,7 @@ After completion, retry uses the migration journal and the same verified image.
 A pending Helm operation also blocks the next run; inspect the cluster and
 release status before intervention. Do not delete release metadata blindly.
 
-If tests fail, deployment is blocked; a successful parallel migration remains
-applied. No database reversal is attempted.
+If unit tests fail, build, publication, migration and deployment are blocked. No database reversal is attempted.
 If migration fails, inspect its logs and schema/journal, fix the cause, and run
 the corrected forward release. Application deployment is not started.
 If deployment fails, inspect `helm status`, Deployment/Pod events and the running
@@ -148,7 +140,7 @@ automatic database downgrade or migration rollback workflow is implemented.
 ## Enabling the pilot
 
 1. Publish the infrastructure workflow/chart as immutable release/tag
-   `delivery-v0.5.2`, then publish Product. Its workflow calls and chart checkout
+   `delivery-v0.7.0`, then publish Product. Its workflow calls and chart checkout
    already select that version. No other application's delivery reference changes.
 2. Configure the official runner and scoped Kubernetes credential as described
    in `bootstrap/runner/README.md`.

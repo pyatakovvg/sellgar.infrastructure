@@ -1,4 +1,4 @@
-name: Test application
+name: Unit tests
 
 on:
   workflow_call:
@@ -15,7 +15,7 @@ permissions:
 
 jobs:
   test:
-    name: Unit and component tests
+    name: Unit tests
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
@@ -25,5 +25,5 @@ jobs:
           submodules: recursive
           token: ${{ secrets.SUBMODULES_READ_TOKEN || github.token }}
           persist-credentials: false
-      - name: Run tests
+      - name: Run unit tests
         run: docker build --platform linux/amd64 --target tests --progress plain .

@@ -62,7 +62,7 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           repository: sellgar/sellgar.infrastructure
-          ref: delivery-v0.6.0
+          ref: delivery-v0.7.0
           path: infrastructure
           sparse-checkout: charts/application
           persist-credentials: false

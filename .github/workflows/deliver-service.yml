@@ -24,9 +24,6 @@ on:
       migration-image-digest:
         type: string
         required: true
-    secrets:
-      SUBMODULES_READ_TOKEN:
-        required: false
 
 permissions:
   contents: read
@@ -50,14 +47,6 @@ env:
   TARGET_ENVIRONMENT: ${{ inputs.environment }}
 
 jobs:
-  test:
-    name: Unit and component tests
-    uses: sellgar/sellgar.infrastructure/.github/workflows/test-application.yml@delivery-v0.6.0
-    secrets:
-      SUBMODULES_READ_TOKEN: ${{ secrets.SUBMODULES_READ_TOKEN }}
-    with:
-      source-revision: ${{ inputs.source-revision }}
-
   migrate:
     if: >-
       (github.event_name == 'push' && github.ref == 'refs/heads/development' && inputs.environment == 'dev') ||
@@ -131,8 +120,8 @@ jobs:
           kubectl -n "$TARGET_NAMESPACE" get job "$RELEASE_NAME-migration" || true
 
   deploy:
-    needs: [test, migrate]
-    uses: sellgar/sellgar.infrastructure/.github/workflows/deploy-application.yml@delivery-v0.6.0
+    needs: migrate
+    uses: sellgar/sellgar.infrastructure/.github/workflows/deploy-application.yml@delivery-v0.7.0
     with:
       environment: ${{ inputs.environment }}
       namespace: ${{ inputs.namespace }}

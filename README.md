@@ -46,20 +46,12 @@ Ansible и CI его не вызывают.
 
 ## Доставка приложений
 
-Product использует [отдельные видимые jobs](docs/product-delivery.md) общего
-GitHub reusable workflow: build → publish → параллельно test/migrate → deploy.
-Build/test выполняются на GitHub, migrate/deploy требуют private runner.
-Argo CD не должен управлять теми же ресурсами после перехода Product на Helm CI.
-Для Product dev runner установлен, передача управления завершена и первый
-полный проход Actions успешно выполнен; результаты и обслуживание — в руководстве
-доставки выше. Остальные сервисы на этот механизм ещё не переведены.
-
-Для остальных приложений подготовлен [общий CI-контракт](docs/application-delivery.md)
-с обязательными unit/component tests и профилями с БД/без БД. Общий runner организации
-и передача управления ещё должны пройти фактическую проверку. Порядок переноса
-репозиториев: [organization transition](docs/organization-transition.md). До передачи работающие
-приложения сохраняют [Helm OCI delivery](docs/helm-delivery.md): CI
-публикует образ и пакет своей среды, Argo CD отслеживает диапазон версий.
+Все 12 dev-приложений используют [общий CI-контракт](docs/application-delivery.md):
+unit → build → publish → migrate → deploy. Для приложений без БД migrate отсутствует.
+Юнит-тесты обязательны до сборки; компонентная job пока не включена.
+Unit/build/publish работают на GitHub, migrate/deploy — на одном общем runner `sellgar-dev`.
+Приложениями управляет Helm CI, платформой — Argo CD. Переход и доказательства:
+[organization-transition.md](docs/organization-transition.md).
 Коммит в infrastructure на каждый выпуск приложения не нужен.
 Prod promotion выполняется вручную с проверенным digest, без пересборки.
 

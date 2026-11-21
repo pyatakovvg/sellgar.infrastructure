@@ -3,7 +3,7 @@
 ## Задача и состояние
 
 Запрос владельца: общий runner для всех сервисов; максимум два во всей системе.
-Рабочие ветки остаются `development`. Сборки, unit/component tests и публикация
+Рабочие ветки остаются `development`. Сборки, юнит-тесты и публикация
 образов выполняются на GitHub-hosted runners; migrate/deploy — в приватном контуре.
 Production и reverse миграций не входят в этот переход.
 
@@ -19,8 +19,8 @@ kubeconfig. Перед удалением проверено отсутстви�
 полную доставку через общий runner: [run 44941272922, attempt 2](https://github.com/sellgar/sellgar.product.service/actions/runs/44941272922),
 source `0c5021d`, Helm revision 7, готовый pod и HTTP health `ok`.
 Старый Product runner снят с регистрации; его служба, Linux account и home удалены.
-В VM остался ровно один общий runner. Остальные приложения
-проходят поэтапную передачу Argo → Helm; до успешного CI каждого переход не завершён.
+В VM остался ровно один общий runner. Все 12 приложений переданы от Argo к Helm без удаления workloads и данных.
+Контракт delivery-v0.7.0 ставит unit перед build; требуется проверка новых CI каждого приложения.
 
 ## Решение
 
@@ -76,8 +76,7 @@ secrets отсутствуют. Их значения не читались; cre
 - sellgar.ui.admin
 - sellgar.ui.desktop
 
-Workspace, mobile и общие библиотеки не переносятся в этой операции. Их Git history,
-ветки и содержимое не меняются. В workspace после переноса обновляются только
+Workspace, mobile и общие библиотеки не переносятся в этой операции. Их владельцы и рабочие ветки сохраняются. Framework test loader исправлен отдельно; его gitlink синхронизирован в Admin, Desktop и Mobile. В workspace после переноса обновляются
 соответствующие `.gitmodules`, remotes и gitlinks; nested library URL сохраняются.
 
 ## Последовательность перехода
@@ -100,8 +99,8 @@ Workspace, mobile и общие библиотеки не переносятся
    owner при transfer; старые `ghcr.io/pyatakovvg/...` сохраняются для работающих
    Deployment, истории и Argo OCI до фактического перехода каждого приложения.
    Проверить публикацию нового пакета и pull из dev с существующим `ghcr-pull`.
-6. Сначала проверить полный Product pipeline через общий runner: build → publish →
-   параллельно test/migrate → deploy. Проверить миграционные логи, завершение Job,
+6. Сначала проверить полный Product pipeline через общий runner: unit → build → publish →
+   migrate → deploy. Проверить миграционные логи, завершение Job,
    Helm revision, ожидаемый digest и readiness. Затем удалить старый Product runner.
 7. По одному передавать остальные приложения от Argo к Helm CI без удаления workloads,
    БД и Secrets. Общий runner уже готов; создание новых runners запрещено.
@@ -118,7 +117,7 @@ Workspace, mobile и общие библиотеки не переносятся
 - Actionlint прошёл для shared workflows и всех 12 приложений.
 - Helm lint и dev render прошли для всех 12 приложений, migration render — для
   семи приложений с БД. Это проверка конфигурации, не выполнение unit tests/миграций.
-- Полные сборки и unit/component tests выполняются в GitHub. Для Product все пять jobs
+- Полные сборки и юнит-тесты выполняются в GitHub. Для Product все пять jobs
   успешны, migrate/deploy выполнил именно sellgar-dev. Остальные ожидают проверки.
 - Переход завершён только после успешного реального GitHub run каждого приложения,
   проверки digest/readiness и подтверждения одного общего Online runner.

@@ -1,16 +1,16 @@
 # Доставка приложений
 
-Рабочая ветка — `development`. Общий контракт `delivery-v0.6.0` опубликован
-и проверен полным Product run 44941272922 через organization runner.
+Рабочая ветка — `development`. Общий контракт `delivery-v0.7.0` ставит юнит-тесты
+перед сборкой. Предыдущий контракт проверен Product run 44941272922 через organization runner.
 Работающий образец Product описан в [product-delivery.md](product-delivery.md).
 Перед включением CI нового приложения сначала готовится runner и выполняется
 передача управления от Argo CD к Helm. Публикация workflow не означает готовность доставки.
 
 ## Jobs
 
-С БД: `build → publish → [test | migrate] → deploy`.
-Без БД: `build → publish → test → deploy`.
-`test` и `migrate` параллельны; `deploy` требует успешных обязательных предшественников.
+С БД: `unit → build → publish → migrate → deploy`.
+Без БД: `unit → build → publish → deploy`.
+Ошибка юнит-тестов блокирует сборку и все последующие этапы. Компонентной job сейчас нет.
 В workflows нет `continue-on-error` или `always()` для обхода этого условия.
 
 | Приложение | Release | Migration Job |
@@ -32,12 +32,16 @@ Build, tests и publication работают на GitHub-hosted runners. Каж�
 имеет Docker targets `application` и `tests`; только приложения с БД имеют `migration`.
 Media использует `node:test` для проверки выдачи изображений и storage events.
 Остальные приложения сохраняют существующие команды Jest/Vitest/Node tests;
-Store/Cart проверяют PostgreSQL в изолированном tests target.
+Tests target устанавливает зависимости и проверяет исходники без сборки приложения.
+При необходимости компилируется только зависимость `@sellgar/outbox` с entrypoint в dist.
+Проверки PostgreSQL остаются отдельными тестами в исходниках и автоматически не запускаются.
+Admin Vitest проверяет исходники приложения, исключая вложенные репозитории и integration-наборы;
+у библиотек собственные тестовые контракты. Media использует установленный `ts-node/register` для исходников.
 
 Собранные образы передаются из build в publish через штатные Actions artifacts;
 publish проверяет image IDs и сохраняет registry digests. Никаких CI Python-обёрток нет.
 Приложения вызывают маленькие общие reusable workflows из `.github/workflows/`:
-build-service, test-application, deliver-service/deliver-application,
+test-application, build-service, deliver-service,
 deploy-application, validate-release и back-merge.
 
 ## Runner и доступы
