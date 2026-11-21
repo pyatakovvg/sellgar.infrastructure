@@ -2,17 +2,6 @@ apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 resources:
 - project.yaml
-- services/admin-ui/application.yaml
-- services/storefront/application.yaml
 - platform-project.yaml
 - platform-application.yaml
 - storage/seaweedfs/application.yaml
-- services/socket-gateway/application.yaml
-- services/client-gateway/application.yaml
-- services/admin-gateway/application.yaml
-- services/identity-service/application.yaml
-- services/shop-service/application.yaml
-- services/store-service/application.yaml
-- services/cart-service/application.yaml
-- services/file-service/application.yaml
-- services/media-service/application.yaml

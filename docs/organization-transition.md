@@ -15,8 +15,12 @@ kubeconfig. Перед удалением проверено отсутстви�
 13 репозиториев перенесены в организацию `sellgar`; названия, public visibility
 и default branch master сохранены. Общий runner `sellgar-dev` зарегистрирован
 и запущен. Группа Default допускает ровно 12 приложений, public access включён.
-Публикация `delivery-v0.6.0` и полный проход новых pipelines ещё не выполнены.
-Product пока сохраняет прежний repository runner; остальные приложения — Argo/Helm OCI.
+Тег `delivery-v0.6.0` опубликован на commit `1a73029`. Product успешно прошёл
+полную доставку через общий runner: [run 44941272922, attempt 2](https://github.com/sellgar/sellgar.product.service/actions/runs/44941272922),
+source `0c5021d`, Helm revision 7, готовый pod и HTTP health `ok`.
+Старый Product runner снят с регистрации; его служба, Linux account и home удалены.
+В VM остался ровно один общий runner. Остальные приложения
+проходят поэтапную передачу Argo → Helm; до успешного CI каждого переход не завершён.
 
 ## Решение
 
@@ -114,8 +118,8 @@ Workspace, mobile и общие библиотеки не переносятся
 - Actionlint прошёл для shared workflows и всех 12 приложений.
 - Helm lint и dev render прошли для всех 12 приложений, migration render — для
   семи приложений с БД. Это проверка конфигурации, не выполнение unit tests/миграций.
-- Полные сборки и unit/component tests должны пройти в GitHub. Тесты, миграции
-  и фактический deploy новых версий ещё не проверены.
+- Полные сборки и unit/component tests выполняются в GitHub. Для Product все пять jobs
+  успешны, migrate/deploy выполнил именно sellgar-dev. Остальные ожидают проверки.
 - Переход завершён только после успешного реального GitHub run каждого приложения,
   проверки digest/readiness и подтверждения одного общего Online runner.
 
@@ -128,3 +132,12 @@ Workspace, mobile и общие библиотеки не переносятся
 - [Перенос Git, Secrets и deploy keys](https://docs.github.com/en/repositories/creating-and-managing-repositories/transferring-a-repository).
 - [Actions не поддерживает redirects](https://docs.github.com/en/actions/reference/workflows-and-actions/reusing-workflow-configurations).
 - [GHCR packages сохраняют owner и теряют прежнюю связь с repo](https://docs.github.com/en/packages/learn-github-packages/about-permissions-for-github-packages).
+
+## Подготовка инструментов
+
+Первый Product attempt остановлен на медленной загрузке kubectl; миграция тогда
+не запускалась. В стандартный setup-kubectl cache помещён официальный v1.37.2
+с проверенным SHA-256. Повтор failed jobs сохранил успешные build/publish/tests,
+выполнил migrate и deploy. Ansible теперь подготавливает этот cache штатным get_url
+с checksum. Управление .env через lineinfile сохраняет остальные upstream-переменные.
+Первая загрузка миграционного образа из GHCR заняла 7m47s; Job завершилась успешно.

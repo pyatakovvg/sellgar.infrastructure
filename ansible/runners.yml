@@ -7,6 +7,8 @@
     runner_checksum: sha256:baebf204307bac6193480852732f0aba2ae97b6c5597c244f4d5558390147c40
     runner_archive: /var/cache/actions-runner-linux-x64-{{ runner_version }}.tar.gz
     runner_registration_token: ''
+    runner_kubectl_version: '1.37.2'
+    runner_kubectl_checksum: sha256:c04487523e7aa7d1493f7808174c899db93d7a9cf57531420cd76b9bd415f8f4
   pre_tasks:
     - name: Require an organization and a bounded pool before changing the host
       ansible.builtin.assert:

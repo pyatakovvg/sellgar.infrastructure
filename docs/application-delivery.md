@@ -1,7 +1,7 @@
 # Доставка приложений
 
-Рабочая ветка — `development`. Ниже описан подготовленный, ещё не опубликованный
-контракт `delivery-v0.6.0`. Этот тег пока не создан; новые callers публиковать нельзя.
+Рабочая ветка — `development`. Общий контракт `delivery-v0.6.0` опубликован
+и проверен полным Product run 44941272922 через organization runner.
 Работающий образец Product описан в [product-delivery.md](product-delivery.md).
 Перед включением CI нового приложения сначала готовится runner и выполняется
 передача управления от Argo CD к Helm. Публикация workflow не означает готовность доставки.
@@ -59,13 +59,15 @@ SHA-256 и upstream `config.sh`/`svc.sh`; своих установочных с
 У общего dev runner один Linux-пользователь без sudo/Docker и одна systemd-служба
 с автозапуском. Его доступ в GitHub ограничивается списком репозиториев организации.
 Node actions объявляют Node 24 в manifest. Helm 4.3.2 и kubectl 1.37.2
-устанавливаются штатными setup actions; версии закреплены.
+используются через штатные setup actions; версии закреплены. Ansible заранее
+загружает kubectl в стандартный cache с SHA-256, чтобы CI не зависел от первой загрузки.
 
 Используется существующий namespace-scoped deployment principal
 `product-delivery-dev`. Историческое имя не ограничивает его Product:
-он доверен для всего `sellgar-dev`. В подготовленном RBAC добавлены Ingress/Middleware для gateway/UI,
+он доверен для всего `sellgar-dev`. В применённом RBAC добавлены Ingress/Middleware для gateway/UI,
 но не даёт доступа к `sellgar-prod` или cluster administration.
-Kubeconfig копируется внутри VM в home общего исполнителя; административный K3s config
+Канонический namespace kubeconfig хранится в `/etc/sellgar/delivery/dev.kubeconfig`
+(root, 0600) и копируется Ansible внутри VM в home общего исполнителя; административный K3s config
 не выдаётся runner. Срок сертификата и обновление: [runner README](../bootstrap/runner/README.md).
 
 Ansible подготовка:
