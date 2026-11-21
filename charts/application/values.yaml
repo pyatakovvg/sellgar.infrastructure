@@ -11,8 +11,15 @@ command: []
 args: []
 migration:
   enabled: false
+  image:
+    repository: ''
+    digest: ''
   command: []
   args: []
+  env: {}
+  backoffLimit: 2
+  activeDeadlineSeconds: 180
+  ttlSecondsAfterFinished: 86400
 configmaps: []
 volumeMounts: []
 volumes: []

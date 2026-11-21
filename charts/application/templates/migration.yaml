@@ -1,4 +1,14 @@
 {{- if .Values.migration.enabled }}
+{{- $image := .Values.image }}
+{{- if or .Values.migration.image.repository .Values.migration.image.digest }}
+{{- $image = .Values.migration.image }}
+{{- if not $image.repository }}
+{{- fail "migration.image.repository is required for a separate migration image" }}
+{{- end }}
+{{- if not (regexMatch "^sha256:[0-9a-f]{64}$" $image.digest) }}
+{{- fail "migration.image.digest must be a sha256 digest from CI" }}
+{{- end }}
+{{- end }}
 apiVersion: batch/v1
 kind: Job
 metadata:
@@ -6,10 +16,11 @@ metadata:
   annotations:
     argocd.argoproj.io/hook: Sync
     argocd.argoproj.io/sync-wave: "-1"
-    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation,HookSucceeded
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation
 spec:
-  backoffLimit: 2
-  activeDeadlineSeconds: 180
+  backoffLimit: {{ .Values.migration.backoffLimit }}
+  activeDeadlineSeconds: {{ .Values.migration.activeDeadlineSeconds }}
+  ttlSecondsAfterFinished: {{ .Values.migration.ttlSecondsAfterFinished }}
   template:
     spec:
       restartPolicy: Never
@@ -23,13 +34,17 @@ spec:
       {{- end }}
       containers:
         - name: migration
-          image: {{ printf "%s@%s" .Values.image.repository .Values.image.digest | quote }}
-          command: {{ toJson (required "migration.command is required" .Values.migration.command) }}
-          args: {{ toJson .Values.migration.args }}
+          image: {{ printf "%s@%s" $image.repository $image.digest | quote }}
+          {{- with .Values.migration.command }}
+          command: {{ toJson . }}
+          {{- end }}
+          {{- with .Values.migration.args }}
+          args: {{ toJson . }}
+          {{- end }}
           securityContext:
             {{- toYaml .Values.securityContext | nindent 12 }}
           env:
-            {{- include "application.env" . | nindent 12 }}
+            {{- include "application.env" (dict "Values" (dict "env" (default .Values.env .Values.migration.env))) | nindent 12 }}
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
           {{- with .Values.volumeMounts }}

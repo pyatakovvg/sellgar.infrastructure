@@ -84,6 +84,78 @@ class HelmReleaseTests(unittest.TestCase):
             package_release(**dict(self.arguments, environment="prod"))
         self.assertFalse(self.arguments["destination"].exists())
 
+    def test_migration_job_uses_paired_image_and_runs_before_deployment(self):
+        migration_digest = "sha256:" + "2" * 64
+        self.common["migration"] = {
+            "enabled": True,
+            "image": {"repository": "ghcr.io/example/admin-ui"},
+            "command": ["node"],
+            "args": ["migrate.js"],
+            "env": {"DATABASE_PASSWORD": {"valueFrom": {"secretKeyRef": {"name": "database", "key": "password"}}}},
+        }
+        (self.service / "helm/values.app.yaml").write_text(yaml.safe_dump(self.common))
+
+        release = package_release(**self.arguments, migration_digest=migration_digest)
+        resources = list(yaml.safe_load_all(subprocess.check_output([
+            "helm", "template", "admin-ui", release["chart_package"], "--namespace", "sellgar-dev"
+        ], text=True)))
+        job = next(resource for resource in resources if resource["kind"] == "Job")
+        deployment = next(resource for resource in resources if resource["kind"] == "Deployment")
+        configmap = next(resource for resource in resources if resource["kind"] == "ConfigMap")
+        annotations = job["metadata"]["annotations"]
+        self.assertEqual(annotations["argocd.argoproj.io/hook"], "Sync")
+        self.assertEqual(annotations["argocd.argoproj.io/sync-wave"], "-1")
+        self.assertEqual(configmap["metadata"]["annotations"]["argocd.argoproj.io/sync-wave"], "-2")
+        self.assertEqual(annotations["argocd.argoproj.io/hook-delete-policy"], "BeforeHookCreation")
+        self.assertEqual(job["spec"]["ttlSecondsAfterFinished"], 86400)
+        migration = job["spec"]["template"]["spec"]["containers"][0]
+        application = deployment["spec"]["template"]["spec"]["containers"][0]
+        self.assertEqual(migration["image"], f"ghcr.io/example/admin-ui@{migration_digest}")
+        self.assertEqual(application["image"], f"ghcr.io/example/admin-ui@{DIGEST}")
+        self.assertEqual([entry["name"] for entry in migration["env"]], ["DATABASE_PASSWORD"])
+        metadata = yaml.safe_load(subprocess.check_output(["helm", "show", "chart", release["chart_package"]], text=True))
+        self.assertEqual(metadata["annotations"]["sellgar.io/migration-image-digest"], migration_digest)
+
+    def test_configured_migration_image_cannot_publish_without_verified_digest(self):
+        self.common["migration"] = {"enabled": True, "image": {"repository": "ghcr.io/example/admin-ui"}}
+        (self.service / "helm/values.app.yaml").write_text(yaml.safe_dump(self.common))
+        with self.assertRaisesRegex(ValueError, "verified migration digest"):
+            package_release(**self.arguments)
+        self.assertFalse(self.arguments["destination"].exists())
+
+    def test_rejects_migration_digest_for_disabled_job_or_mutable_image(self):
+        with self.assertRaisesRegex(ValueError, "migration.enabled"):
+            package_release(**self.arguments, migration_digest="sha256:" + "2" * 64)
+        self.common["migration"] = {"enabled": True}
+        (self.service / "helm/values.app.yaml").write_text(yaml.safe_dump(self.common))
+        with self.assertRaisesRegex(ValueError, "Migration digest"):
+            package_release(**self.arguments, migration_digest="latest")
+
+    def test_legacy_migration_keeps_application_image_and_explicit_command(self):
+        self.common["migration"] = {"enabled": True, "command": ["node"], "args": ["migrate.js"]}
+        (self.service / "helm/values.app.yaml").write_text(yaml.safe_dump(self.common))
+        release = package_release(**self.arguments)
+        resources = list(yaml.safe_load_all(subprocess.check_output([
+            "helm", "template", "admin-ui", release["chart_package"]
+        ], text=True)))
+        job = next(resource for resource in resources if resource["kind"] == "Job")
+        container = job["spec"]["template"]["spec"]["containers"][0]
+        self.assertEqual(container["image"], f"ghcr.io/example/admin-ui@{DIGEST}")
+        self.assertEqual(container["command"], ["node"])
+        self.assertEqual(container["args"], ["migrate.js"])
+
+    def test_migration_can_use_its_image_default_command(self):
+        self.common["migration"] = {"enabled": True, "image": {"repository": "ghcr.io/example/admin-ui"}}
+        (self.service / "helm/values.app.yaml").write_text(yaml.safe_dump(self.common))
+        release = package_release(**self.arguments, migration_digest="sha256:" + "2" * 64)
+        resources = list(yaml.safe_load_all(subprocess.check_output([
+            "helm", "template", "admin-ui", release["chart_package"]
+        ], text=True)))
+        job = next(resource for resource in resources if resource["kind"] == "Job")
+        container = job["spec"]["template"]["spec"]["containers"][0]
+        self.assertNotIn("command", container)
+        self.assertNotIn("args", container)
+
 
 if __name__ == "__main__":
     unittest.main()

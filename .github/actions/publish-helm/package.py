@@ -20,7 +20,8 @@ def merge_values(base, override):
     return result
 
 
-def package_release(chart, service, destination, repository, commit, digest, environment, version, release_name):
+def package_release(chart, service, destination, repository, commit, digest, environment, version, release_name,
+                    migration_digest=None):
     if environment not in {"dev", "prod"}:
         raise ValueError("Only dev and prod release packages are supported")
     if not re.fullmatch(r"[a-z0-9-]+/[a-z0-9_.-]+", repository):
@@ -41,6 +42,15 @@ def package_release(chart, service, destination, repository, commit, digest, env
             raise ValueError(f"Expected a values mapping: {file}")
         values = merge_values(values, loaded)
     values["image"] = {"repository": f"ghcr.io/{repository}", "digest": digest}
+    migration = values.get("migration", {})
+    if migration_digest:
+        if not migration.get("enabled"):
+            raise ValueError("A migration image requires migration.enabled")
+        if not re.fullmatch(r"sha256:[0-9a-f]{64}", migration_digest):
+            raise ValueError("Migration digest must come from the verified image publication")
+        migration["image"] = {"repository": f"ghcr.io/{repository}", "digest": migration_digest}
+    elif migration.get("image", {}).get("repository"):
+        raise ValueError("A separate migration image requires a verified migration digest")
 
     name = f"{repository.split('/')[1].replace('.', '-')}-{environment}"
     wrapper = destination / name
@@ -66,6 +76,8 @@ def package_release(chart, service, destination, repository, commit, digest, env
         },
         "dependencies": [{"name": "application", "version": common_chart["version"]}],
     }
+    if migration_digest:
+        metadata["annotations"]["sellgar.io/migration-image-digest"] = migration_digest
     (wrapper / "Chart.yaml").write_text(yaml.safe_dump(metadata, sort_keys=False), encoding="utf-8")
     (wrapper / "values.yaml").write_text(
         yaml.safe_dump({"application": values}, allow_unicode=True, sort_keys=False), encoding="utf-8"
@@ -86,6 +98,7 @@ def main():
         parser.add_argument(f"--{name}", type=Path, required=True)
     for name in ["repository", "commit", "digest", "environment", "version", "release-name"]:
         parser.add_argument(f"--{name}", required=True)
+    parser.add_argument("--migration-digest")
     arguments = parser.parse_args()
     result = package_release(**vars(arguments))
     print(json.dumps(result))

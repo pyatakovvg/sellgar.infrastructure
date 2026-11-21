@@ -39,6 +39,34 @@ Dev-пакет публикуется автоматически только п
 Успешная публикация пакета не означает успешный rollout: итог доставки проверяется
 в Argo CD по Sync/Health и в Kubernetes по readiness/rollout.
 
+## Отдельный образ миграций: Product
+
+Product первым использует два образа из одного source commit: приложение и TypeORM
+миграции. CI передаёт `image-digest` и `migration-image-digest` в общий action.
+Пакет закрепляет `application.image` и `application.migration.image`; обе ссылки
+принадлежат GHCR repository сервиса, а metadata содержит оба digest и source SHA.
+Если values запросили отдельный migration image, отсутствие проверенного digest
+останавливает упаковку. Сервисы с прежним контрактом продолжают использовать
+основной образ и явно заданную migration command.
+
+Порядок Argo CD: ConfigMap (Sync wave -2), migration Job (-1), Deployment (0).
+Job использует CMD миграционного образа, если command/args не заданы. Ошибка
+блокирует обновление Deployment; автоматического `down` нет. Ранее запущенные
+реплики продолжают работать, поэтому схема миграции должна быть с ними совместима.
+
+Job сохраняется после завершения для чтения результата и логов. Следующий Sync
+удаляет её через BeforeHookCreation; без нового Sync она удаляется Kubernetes TTL.
+Values `migration.backoffLimit`, `activeDeadlineSeconds`, `ttlSecondsAfterFinished`
+задают ограничения. Product: 0 повторов Pod, 600 секунд, TTL 86400 секунд. Повторы всей
+синхронизации отдельно определяются retry-политикой Argo CD Application.
+`migration.env` позволяет передать Job только DB secret refs; если не задан,
+для совместимости используется общий `env` приложения. Права самой DB-роли
+этот контракт не изменяет.
+
+Общий action/chart сначала публикуется отдельным infrastructure commit. CI и prod
+workflow Product закрепляют этот SHA до публикации сервисных изменений. Остальные
+сервисы не переключаются на новую схему автоматически.
+
 ## Доступ
 
 CI выполняется на GitHub-hosted runner и использует `GITHUB_TOKEN` с `packages: write`
