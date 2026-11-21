@@ -1,9 +1,9 @@
 # Product: CI-driven delivery
 
-This replaces delivery for Product only. Other applications keep their pinned
-Argo CD/Helm OCI mechanism and `.github/actions/publish-helm` remains for them.
+All 12 development applications now use the shared organization runner and Helm CI.
+The old Helm OCI application packager is removed. See [application delivery](application-delivery.md).
 
-## Dev pilot, 21 November 2026
+## Initial Product pilot, 21 November 2026 (historical)
 
 The official repository runner `sellgar-product-dev` is installed on the dev VM
 as the unprivileged `product-runner` systemd service. Its Kubernetes identity is
