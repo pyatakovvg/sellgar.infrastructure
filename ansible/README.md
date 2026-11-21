@@ -19,7 +19,11 @@ python3 -m venv .venv
 .venv/bin/ansible-galaxy collection install -r requirements.yml
 ```
 
-Все команды ниже выполняются из `ansible/`. `inventory/dev.yml` описывает
+Все команды ниже выполняются из `ansible/`.
+Коллекции устанавливаются в игнорируемый `.collections/`, Python-пакеты — в
+`.venv/`; системный Python и глобальные Ansible collections не изменяются.
+
+`inventory/dev.yml` описывает
 существующую VM. Для VPS создаётся отдельный inventory с его IP, SSH-пользователем,
 ключом, версией K3s и путём kubeconfig. Адреса prod сейчас не выдумываются.
 

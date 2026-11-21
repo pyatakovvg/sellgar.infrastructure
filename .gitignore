@@ -1,5 +1,6 @@
 .local/
 .venv/
+.collections/
 .env
 .env.*
 !.env.example
