@@ -1,0 +1,53 @@
+name: Deliver application
+
+on:
+  workflow_call:
+    inputs:
+      environment:
+        type: string
+        required: true
+      namespace:
+        type: string
+        required: true
+      release-name:
+        type: string
+        required: true
+      source-revision:
+        type: string
+        required: true
+      chart-revision:
+        type: string
+        required: true
+      image-digest:
+        type: string
+        required: true
+    secrets:
+      SUBMODULES_READ_TOKEN:
+        required: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: delivery-${{ github.repository }}-${{ inputs.environment }}
+  cancel-in-progress: false
+
+jobs:
+  test:
+    name: Unit and component tests
+    uses: sellgar/sellgar.infrastructure/.github/workflows/test-application.yml@delivery-v0.6.0
+    secrets:
+      SUBMODULES_READ_TOKEN: ${{ secrets.SUBMODULES_READ_TOKEN }}
+    with:
+      source-revision: ${{ inputs.source-revision }}
+
+  deploy:
+    needs: test
+    uses: sellgar/sellgar.infrastructure/.github/workflows/deploy-application.yml@delivery-v0.6.0
+    with:
+      environment: ${{ inputs.environment }}
+      namespace: ${{ inputs.namespace }}
+      release-name: ${{ inputs.release-name }}
+      source-revision: ${{ inputs.source-revision }}
+      chart-revision: ${{ inputs.chart-revision }}
+      image-digest: ${{ inputs.image-digest }}

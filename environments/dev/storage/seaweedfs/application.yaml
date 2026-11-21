@@ -13,7 +13,7 @@ spec:
       releaseName: seaweedfs
       valueFiles:
       - $values/environments/dev/storage/seaweedfs/values.yaml
-  - repoURL: https://github.com/pyatakovvg/sellgar.infrastructure.git
+  - repoURL: https://github.com/sellgar/sellgar.infrastructure.git
     targetRevision: development
     ref: values
   destination:

@@ -5,6 +5,8 @@ releaseId: ''
 sourceRevision: ''
 environmentFile:
   enabled: false
+  filename: .env
+  mountPath: /app/.env
   data: ''
 
 image:

@@ -93,3 +93,23 @@ Docker config и аккаунты на управляющей машине не 
 Создание credentials проверено в отдельном временном namespace; повторный запуск
 показал changed=0. Проверочный namespace удалён. Существующая VM не переустанавливалась;
 развёртывание с нуля на отдельном VPS ещё не проверено.
+
+## GitHub delivery runners
+
+`runners.yml` подготавливает общий organization-level runner для dev.
+Состав — `delivery_runners` в inventory: один на среду, максимум два всего.
+Число приложений не влияет на размер pool. Пустая `delivery_organization`,
+повтор среды или превышение лимита останавливают playbook до изменения узла.
+Официальный archive закреплён SHA-256; пользователь runner не получает sudo/Docker.
+Подготовка и регистрация разделены штатными Ansible tags `prepare`/`register`.
+Первая не регистрирует исполнителей в GitHub; вторая требует short-lived organization token
+через игнорируемый Vault file и использует upstream `config.sh`/`svc.sh`.
+
+`delivery_runners[].kubeconfig_source` указывает внутри VM на namespace-scoped
+credential; K3s administrator config сюда не подходит. На новом сервере сначала
+нужно выпустить отдельный deployment credential и указать его путь в inventory.
+Сначала создаётся согласованная организация и готовится перенос репозиториев:
+[план перехода](../docs/organization-transition.md). Регистрация и включение delivery
+выполняются до публикации workflow приложения,
+чтобы migrate/deploy не остались в очереди. Детали и команды:
+[доставка приложений](../docs/application-delivery.md).

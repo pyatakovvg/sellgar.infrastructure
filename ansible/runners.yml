@@ -1,0 +1,44 @@
+- name: Configure shared organization delivery runners
+  hosts: runner_hosts
+  become: true
+  gather_facts: false
+  vars:
+    runner_version: '2.338.2'
+    runner_checksum: sha256:baebf204307bac6193480852732f0aba2ae97b6c5597c244f4d5558390147c40
+    runner_archive: /var/cache/actions-runner-linux-x64-{{ runner_version }}.tar.gz
+    runner_registration_token: ''
+  pre_tasks:
+    - name: Require an organization and a bounded pool before changing the host
+      ansible.builtin.assert:
+        that:
+          - delivery_organization | default('') is match('^[A-Za-z0-9][A-Za-z0-9-]{0,38}$')
+          - delivery_runners | length >= 1
+          - delivery_runners | length <= 2
+          - delivery_runners | map(attribute='environment') | unique | length == delivery_runners | length
+          - delivery_runners | map(attribute='user') | unique | length == delivery_runners | length
+          - delivery_runners | map(attribute='environment') | difference(['dev', 'prod']) | length == 0
+        fail_msg: Configure the approved GitHub organization and at most one delivery runner per environment. Personal repository registrations are not supported.
+      tags: [always]
+  tasks:
+    - name: Install runner prerequisites
+      ansible.builtin.apt:
+        name: [ca-certificates, curl, git, gh, jq, libicu74, acl]
+        state: present
+      tags: [prepare]
+
+    - name: Download official runner archive
+      ansible.builtin.get_url:
+        url: https://github.com/actions/runner/releases/download/v{{ runner_version }}/actions-runner-linux-x64-{{ runner_version }}.tar.gz
+        dest: '{{ runner_archive }}'
+        checksum: '{{ runner_checksum }}'
+        mode: '0644'
+      tags: [prepare]
+
+    - name: Configure shared environment runner
+      ansible.builtin.include_tasks:
+        file: tasks/runner.yml
+      loop: '{{ delivery_runners }}'
+      loop_control:
+        loop_var: delivery_runner
+        label: '{{ delivery_runner.environment }}'
+      tags: [always]

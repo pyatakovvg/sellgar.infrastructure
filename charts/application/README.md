@@ -1,45 +1,53 @@
 # Общий chart приложения
 
-Версия 0.1.0. Создаёт Deployment, ClusterIP Service, опциональный Ingress и
-ConfigMaps из переданных values. Chart не содержит настроек конкретного сервиса.
+Создаёт Deployment, ClusterIP Service, опциональный Ingress/Middleware и ConfigMap.
+Chart не содержит настроек конкретного приложения. Его values принадлежат сервису:
+`helm/values.app.yaml`, `helm/dev/values.yaml`, `helm/prod/values.yaml`.
 
-Приложение хранит:
+`image.repository` и `image.digest` закрепляют опубликованный образ. Пустой или
+неверный digest отклоняется. `releaseId` и `sourceRevision` связывают runtime
+с конкретной попыткой доставки; RollingUpdate использует `maxUnavailable: 0`.
 
-```text
-helm/
-  values.app.yaml
-  dev/values.yaml
-  prod/values.yaml
-```
+## Runtime-конфигурация
 
-`values.app.yaml` задаёт порт приложения, mounts, volumes, probes, resources и
-путь Ingress. Values среды задают реплики, host/TLS и `configmaps`, включая
-`nameOverride`, `enabled`, `filename` и содержимое файла в `data`.
-Общий chart создаёт ресурс ConfigMap; его данные принадлежат приложению.
+`environmentFile.enabled: true` создаёт immutable ConfigMap с именем
+`<release>-env-<releaseId>`. `environmentFile.data` приходит из values среды;
+`filename` по умолчанию `.env`, `mountPath` — `/app/.env`.
+Admin UI использует `config.js` и `/usr/share/nginx/html/config.js`,
+Next — `.env` и `/app/clients/desktop/.env`.
+ConfigMap сохраняется в истории (`helm.sh/resource-policy: keep`), поэтому старый
+pod не получает новую конфигурацию при повторном запуске.
+Credentials задаются только `env.*.valueFrom.secretKeyRef`, не содержимым файла.
 
-`image.repository` / `image.digest` берутся из CI Artifact `image-values.yaml`.
-Пустой или неверный digest отклоняется. При обновлении ConfigMaps меняется
-checksum pod template, запускающий rolling update с `maxUnavailable: 0`.
+Legacy `configmaps`/ручные volumes пока поддерживаются для старых закреплённых
+пакетов, но новые CI-потребители используют `environmentFile`.
 
-Пример проверки с checkout админки и image-values новой CI-сборки:
+## Раздельные workloads
+
+- `workload: application` рендерит ресурсы приложения без миграций при
+  `migration.enabled: false`.
+- `workload: migration` рендерит только ConfigMap и Kubernetes Job из отдельного
+  `migration.image`. Этот image содержит CLI и миграции. БД credentials задаются
+  отдельным `migration.env`; доступы брокера/подписи приложению не нужны в Job.
+
+Миграции выполняются и ожидаются отдельной GitHub job перед Helm upgrade.
+Для gateway без БД и UI migration workload не вызывается.
+Прежний `migration.enabled: true` оставлен для старых Argo Sync-пакетов,
+но новая доставка им не пользуется. Ни один ресурс не исполняет DB rollback.
+
+## Проверка
+
+Из checkout infrastructure, `APP` — checkout приложения, `DIGEST` — digest образа:
 
 ```bash
 helm lint --strict charts/application \
-  -f "$ADMIN/helm/values.app.yaml" \
-  -f "$ADMIN/helm/dev/values.yaml" \
-  -f "$RELEASE/image-values.yaml"
-
-helm template admin-ui charts/application \
-  -f "$ADMIN/helm/values.app.yaml" \
-  -f "$ADMIN/helm/dev/values.yaml" \
-  -f "$RELEASE/image-values.yaml"
+  -f "$APP/helm/values.app.yaml" -f "$APP/helm/dev/values.yaml" \
+  --set-string image.digest="$DIGEST" --set-string releaseId=check
+helm template application charts/application \
+  -f "$APP/helm/values.app.yaml" -f "$APP/helm/dev/values.yaml" \
+  --set-string image.digest="$DIGEST" --set-string releaseId=check
 ```
 
-`ADMIN` — checkout `sellgar.ui.admin`, `RELEASE` — скачанный Artifact CI.
-Перед deployment фиксируются ревизии chart и values. Для админки нужен образ,
-собранный для `/admin/`, а не предыдущий образ с корневым URL `/`.
-TLS Secret и imagePullSecrets передаются по именам; credentials не добавляются
-в values. Prod values админки пока не содержат адресов API/CDN и не включают
-Ingress. Dev values сохраняют текущие localhost-адреса до развёртывания gateway.
-
-Bootstrap Argo CD и подключение dev описаны в [../../bootstrap/README.md](../../bootstrap/README.md).
+TLS и pull Secrets передаются по именам. Внутренний HTTP-порт — 8080;
+внешний доступ принадлежит Traefik. Админка обслуживает корень собственного домена.
+Полный контракт: [доставка приложений](../../docs/application-delivery.md).

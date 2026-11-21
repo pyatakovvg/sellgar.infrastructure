@@ -1,0 +1,111 @@
+name: Deploy application
+
+on:
+  workflow_call:
+    inputs:
+      environment:
+        type: string
+        required: true
+      namespace:
+        type: string
+        required: true
+      release-name:
+        type: string
+        required: true
+      source-revision:
+        type: string
+        required: true
+      chart-revision:
+        type: string
+        required: true
+      image-digest:
+        type: string
+        required: true
+
+permissions:
+  contents: read
+
+defaults:
+  run:
+    shell: bash
+
+env:
+  TARGET_NAMESPACE: ${{ inputs.namespace }}
+  RELEASE_NAME: ${{ inputs.release-name }}
+  SOURCE_REVISION: ${{ inputs.source-revision }}
+  CHART_REVISION: ${{ inputs.chart-revision }}
+  IMAGE_DIGEST: ${{ inputs.image-digest }}
+  RELEASE_ID: ${{ github.run_id }}-${{ github.run_attempt }}
+  TARGET_ENVIRONMENT: ${{ inputs.environment }}
+
+jobs:
+  deploy:
+    if: >-
+      (github.event_name == 'push' && github.ref == 'refs/heads/development' && inputs.environment == 'dev') ||
+      (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/master' && inputs.environment == 'prod')
+    runs-on: [self-hosted, linux, x64, sellgar-delivery, 'sellgar-${{ inputs.environment }}']
+    environment: ${{ inputs.environment }}
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: ${{ inputs.source-revision }}
+          path: source
+          sparse-checkout: helm
+          persist-credentials: false
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          repository: sellgar/sellgar.infrastructure
+          ref: ${{ inputs.chart-revision }}
+          path: infrastructure
+          sparse-checkout: charts/application
+          persist-credentials: false
+      - uses: azure/setup-helm@9bc31f4ebc9c6b171d7bfbaa5d006ae7abdb4310 # v5.0.1
+        with:
+          version: v4.3.2
+      - uses: azure/setup-kubectl@bda439f5f36b99b262ebdcd3613869bddb064c8e # v5.2.0
+        with:
+          version: v1.37.2
+      - name: Check target and previous operation
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          [[ "$SOURCE_REVISION" =~ ^[0-9a-f]{40}$ ]]
+          [[ "$CHART_REVISION" =~ ^[0-9a-f]{40}$ ]]
+          [[ "$IMAGE_DIGEST" =~ ^sha256:[0-9a-f]{64}$ ]]
+          [[ "$RELEASE_NAME" =~ ^[a-z][a-z0-9-]{0,35}$ ]]
+          test "$TARGET_NAMESPACE" = "sellgar-$TARGET_ENVIRONMENT"
+          test "$(gh api "repos/$GITHUB_REPOSITORY/commits/$GITHUB_REF_NAME" --jq .sha)" = "$GITHUB_SHA"
+          status=$(helm list -n "$TARGET_NAMESPACE" --filter "^$RELEASE_NAME$" -o json | jq -r '.[0].status // ""')
+          if [[ "$status" == pending-* ]]; then
+            printf 'Helm operation is still pending. Inspect the release before retrying.\n' >&2
+            exit 1
+          fi
+          deployment=$(kubectl -n "$TARGET_NAMESPACE" get deployment "$RELEASE_NAME" --ignore-not-found -o json)
+          if [[ -n "$deployment" ]]; then
+            test "$(jq -r '.metadata.annotations["meta.helm.sh/release-name"] // ""' <<< "$deployment")" = "$RELEASE_NAME"
+          fi
+      - name: Deploy application
+        run: |
+          helm upgrade --install "$RELEASE_NAME" infrastructure/charts/application \
+            --namespace "$TARGET_NAMESPACE" \
+            -f source/helm/values.app.yaml -f "source/helm/$TARGET_ENVIRONMENT/values.yaml" \
+            --set workload=application --set migration.enabled=false \
+            --set-string image.digest="$IMAGE_DIGEST" \
+            --set-string sourceRevision="$SOURCE_REVISION" --set-string releaseId="$RELEASE_ID" \
+            --wait --timeout=5m --history-max=10
+      - name: Verify running release
+        run: |
+          image=$(kubectl -n "$TARGET_NAMESPACE" get deployment "$RELEASE_NAME" -o jsonpath='{.spec.template.spec.containers[0].image}')
+          test "${image##*@}" = "$IMAGE_DIGEST"
+          address=$(kubectl -n "$TARGET_NAMESPACE" get service "$RELEASE_NAME" -o jsonpath='{.spec.clusterIP}')
+          path=$(kubectl -n "$TARGET_NAMESPACE" get deployment "$RELEASE_NAME" -o jsonpath='{.spec.template.spec.containers[0].readinessProbe.httpGet.path}')
+          test -n "$path"
+          curl --fail --silent --show-error --output /dev/null --connect-timeout 5 --max-time 15 "http://$address:8080$path"
+          printf '### Deployed %s\n\nSource: `%s`\n\nImage: `%s`\n\nRelease: `%s`\n' \
+            "$RELEASE_NAME" "$SOURCE_REVISION" "$image" "$RELEASE_ID" >> "$GITHUB_STEP_SUMMARY"
+      - name: Deployment diagnostics
+        if: failure()
+        run: |
+          helm status "$RELEASE_NAME" -n "$TARGET_NAMESPACE" || true
+          kubectl -n "$TARGET_NAMESPACE" describe deployment "$RELEASE_NAME" || true

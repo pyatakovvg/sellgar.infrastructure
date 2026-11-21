@@ -1,0 +1,125 @@
+- name: Create unprivileged runner account
+  ansible.builtin.user:
+    name: '{{ delivery_runner.user }}'
+    create_home: true
+    shell: /bin/bash
+    password_lock: true
+  tags: [prepare]
+
+- name: Create private runner directories
+  ansible.builtin.file:
+    path: /home/{{ delivery_runner.user }}/{{ item }}
+    state: directory
+    owner: '{{ delivery_runner.user }}'
+    group: '{{ delivery_runner.user }}'
+    mode: '0700'
+  loop: [actions-runner, .kube]
+  tags: [prepare]
+
+- name: Unpack official runner
+  ansible.builtin.unarchive:
+    src: '{{ runner_archive }}'
+    dest: /home/{{ delivery_runner.user }}/actions-runner
+    remote_src: true
+    owner: '{{ delivery_runner.user }}'
+    group: '{{ delivery_runner.user }}'
+    creates: /home/{{ delivery_runner.user }}/actions-runner/.archive-{{ runner_version }}
+  tags: [prepare]
+
+- name: Record complete runner extraction
+  ansible.builtin.copy:
+    dest: /home/{{ delivery_runner.user }}/actions-runner/.archive-{{ runner_version }}
+    content: '{{ runner_version }}'
+    owner: '{{ delivery_runner.user }}'
+    group: '{{ delivery_runner.user }}'
+    mode: '0600'
+  tags: [prepare]
+
+- name: Install dedicated namespace kubeconfig
+  ansible.builtin.copy:
+    src: '{{ delivery_runner.kubeconfig_source }}'
+    dest: /home/{{ delivery_runner.user }}/.kube/config
+    remote_src: true
+    owner: '{{ delivery_runner.user }}'
+    group: '{{ delivery_runner.user }}'
+    mode: '0600'
+  no_log: true
+  tags: [prepare]
+
+- name: Set runner environment
+  ansible.builtin.copy:
+    dest: /home/{{ delivery_runner.user }}/actions-runner/.env
+    content: |
+      KUBECONFIG=/home/{{ delivery_runner.user }}/.kube/config
+      NODE_OPTIONS=--network-family-autoselection-attempt-timeout=3000
+    owner: '{{ delivery_runner.user }}'
+    group: '{{ delivery_runner.user }}'
+    mode: '0600'
+  tags: [prepare]
+
+- name: Check registration
+  ansible.builtin.stat:
+    path: /home/{{ delivery_runner.user }}/actions-runner/.runner
+  register: runner_registration
+  tags: [register]
+
+- name: Require a short-lived token for a new registration
+  ansible.builtin.assert:
+    that: runner_registration_token | length > 0
+    fail_msg: Supply the organization registration token through an ignored Vault file; never commit it.
+  when: not runner_registration.stat.exists
+  tags: [register]
+
+- name: Read existing registration
+  ansible.builtin.slurp:
+    src: /home/{{ delivery_runner.user }}/actions-runner/.runner
+  register: existing_runner_registration
+  when: runner_registration.stat.exists
+  no_log: true
+  tags: [register]
+
+- name: Refuse to reuse a registration from a different scope
+  ansible.builtin.assert:
+    that:
+      - (existing_runner_registration.content | b64decode | from_json).gitHubUrl | lower | regex_replace('/$', '') == ('https://github.com/' ~ delivery_organization) | lower
+      - (existing_runner_registration.content | b64decode | from_json).agentName == delivery_runner.name
+    fail_msg: Existing runner registration does not match the approved organization and runner name. Inspect it before making changes.
+  when: runner_registration.stat.exists
+  tags: [register]
+
+- name: Register official runner with the organization
+  become_user: '{{ delivery_runner.user }}'
+  ansible.builtin.command:
+    argv:
+      - ./config.sh
+      - --unattended
+      - --url
+      - https://github.com/{{ delivery_organization }}
+      - --name
+      - '{{ delivery_runner.name }}'
+      - --labels
+      - sellgar-delivery,sellgar-{{ delivery_runner.environment }}
+      - --work
+      - _work
+    chdir: /home/{{ delivery_runner.user }}/actions-runner
+    creates: /home/{{ delivery_runner.user }}/actions-runner/.runner
+  environment:
+    ACTIONS_RUNNER_INPUT_TOKEN: '{{ runner_registration_token }}'
+  no_log: true
+  when: not runner_registration.stat.exists
+  tags: [register]
+
+- name: Install official runner systemd service
+  ansible.builtin.command:
+    argv: [./svc.sh, install, '{{ delivery_runner.user }}']
+    chdir: /home/{{ delivery_runner.user }}/actions-runner
+    creates: /etc/systemd/system/actions.runner.{{ delivery_organization }}.{{ delivery_runner.name }}.service
+  tags: [register]
+
+- name: Enable and start delivery runner
+  ansible.builtin.systemd_service:
+    name: actions.runner.{{ delivery_organization }}.{{ delivery_runner.name }}.service
+    enabled: true
+    state: started
+    daemon_reload: true
+  tags: [register]

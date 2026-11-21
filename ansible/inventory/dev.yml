@@ -34,3 +34,15 @@ localhost:
       kubernetes_namespace: sellgar-dev
       kubeconfig_path: "{{ lookup('env', 'HOME') }}/.local/share/sellgar/vm/sellgar-k3s/kubeconfig"
       kubectl_path: "{{ lookup('env', 'HOME') }}/.local/share/sellgar/vm/sellgar-k3s/bin/kubectl"
+runner_hosts:
+  hosts:
+    sellgar-k3s: {}
+  vars:
+    # Created and approved by the owner on 21 November 2026.
+    delivery_organization: sellgar
+    delivery_runners:
+      - environment: dev
+        user: delivery-dev-runner
+        name: sellgar-dev
+        # Existing namespace credential, not the K3s administrator config.
+        kubeconfig_source: /etc/sellgar/delivery/dev.kubeconfig

@@ -1,5 +1,11 @@
 # Product deployment runner
 
+This page records the existing Product-only installation. Do not repeat its
+repository registration for other services. The replacement is one shared
+organization runner; see [the transition plan](../../docs/organization-transition.md).
+Keep this legacy runner until Product succeeds through the shared pool, then
+unregister and remove it. Both coexist only during the transition (two total).
+
 Build, tests and image publication run on GitHub-hosted runners. Only delivery
 runs on an official self-hosted runner in the Linux VM. ARC, DinD and a GitHub
 App are not required. The runner needs Node 24-compatible Linux, Git, curl, jq

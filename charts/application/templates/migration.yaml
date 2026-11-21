@@ -63,8 +63,8 @@ spec:
             {{- end }}
             {{- if .Values.environmentFile.enabled }}
             - name: environment-file
-              mountPath: /app/.env
-              subPath: .env
+              mountPath: {{ .Values.environmentFile.mountPath | quote }}
+              subPath: {{ .Values.environmentFile.filename | quote }}
               readOnly: true
             {{- end }}
           {{- end }}

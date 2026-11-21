@@ -11,7 +11,7 @@ metadata:
 immutable: true
   {{- end }}
 data:
-  .env: |
+  {{ .Values.environmentFile.filename | quote }}: |
     {{- required "environmentFile.data is required" .Values.environmentFile.data | nindent 4 }}
 ---
 {{- end }}

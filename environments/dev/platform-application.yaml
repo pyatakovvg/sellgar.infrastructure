@@ -6,7 +6,7 @@ metadata:
 spec:
   project: sellgar-platform-dev
   source:
-    repoURL: https://github.com/pyatakovvg/sellgar.infrastructure.git
+    repoURL: https://github.com/sellgar/sellgar.infrastructure.git
     targetRevision: development
     path: environments/dev/platform
   destination:

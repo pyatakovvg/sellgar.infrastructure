@@ -9,16 +9,16 @@ spec:
   description: Приложения Sellgar в локальной dev-среде
   sourceRepos:
   - ghcr.io/pyatakovvg/helm
-  - https://github.com/pyatakovvg/sellgar.infrastructure.git
-  - https://github.com/pyatakovvg/sellgar.ui.admin.git
-  - https://github.com/pyatakovvg/sellgar.ui.desktop.git
-  - https://github.com/pyatakovvg/sellgar.admin.gateway.git
-  - https://github.com/pyatakovvg/sellgar.client.gateway.git
-  - https://github.com/pyatakovvg/sellgar.socket.gateway.git
-  - https://github.com/pyatakovvg/sellgar.identity.service.git
-  - https://github.com/pyatakovvg/sellgar.shop.service.git
-  - https://github.com/pyatakovvg/sellgar.product.service.git
-  - https://github.com/pyatakovvg/sellgar.store.service.git
+  - https://github.com/sellgar/sellgar.infrastructure.git
+  - https://github.com/sellgar/sellgar.ui.admin.git
+  - https://github.com/sellgar/sellgar.ui.desktop.git
+  - https://github.com/sellgar/sellgar.admin.gateway.git
+  - https://github.com/sellgar/sellgar.client.gateway.git
+  - https://github.com/sellgar/sellgar.socket.gateway.git
+  - https://github.com/sellgar/sellgar.identity.service.git
+  - https://github.com/sellgar/sellgar.shop.service.git
+  - https://github.com/sellgar/sellgar.product.service.git
+  - https://github.com/sellgar/sellgar.store.service.git
   destinations:
   - server: https://kubernetes.default.svc
     namespace: sellgar-dev

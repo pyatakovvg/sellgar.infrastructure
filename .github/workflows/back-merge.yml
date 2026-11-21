@@ -1,0 +1,27 @@
+name: Return release to development
+
+on:
+  workflow_call:
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  back-merge:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - name: Open master to development PR
+        run: |
+          ahead=$(gh api "repos/$GITHUB_REPOSITORY/compare/development...master" --jq .ahead_by)
+          if [[ "$ahead" == 0 ]]; then exit 0; fi
+          existing=$(gh pr list --repo "$GITHUB_REPOSITORY" --base development --head master --state open --json url --jq '.[0].url // ""')
+          if [[ -n "$existing" ]]; then printf '%s\n' "$existing"; exit 0; fi
+          gh pr create --repo "$GITHUB_REPOSITORY" --base development --head master \
+            --title 'chore: merge master into development' \
+            --body 'Return the deployed release to development. Review and merge after checks.'
