@@ -43,6 +43,13 @@ updates setup-kubectl to official v5.2.0, pinned at
 still declared Node 20. Checkout, Helm, artifact upload/download and registry
 login manifests were checked at their pinned commits and already declare Node 24.
 
+[Node 24 run 44930882276](https://github.com/pyatakovvg/sellgar.product.service/actions/runs/44930882276)
+completed all five jobs without retries or annotations in 5m 56s using
+`delivery-v0.5.2`. Helm revision 6 deployed source
+`b3f96ba8f7c410c15f5b2f90d819984b351c99cd` with application digest
+`sha256:7fccbb2e2ebf3f88f4cc0a524c75cdc3d57bb51f7eca22f0b7641cf015d4c2e0`.
+One updated pod was available, and the workflow's HTTP health/digest checks passed.
+
 ## Ownership and files
 
 - Product owns Dockerfile, application/migration images, Jest tests and `helm/`
