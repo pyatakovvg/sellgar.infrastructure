@@ -13,33 +13,50 @@ Traefik. Применять его после готовности публич�
 После `netplan apply` и перезапуска K3s Flannel вычисляет MTU 1330.
 Это настройка локальной VM, а не универсальное значение для production VPS.
 
-## Постоянный туннель PostgreSQL для DataGrip
+## Постоянные туннели dev-среды
 
-На хосте используется пользовательская служба systemd
-`local-vm/sellgar-postgresql-tunnel.service`. Она открывает только
-`127.0.0.1:15432` и направляет соединения в dev Service `postgresql-rw:5432`.
-При обрыве связи процесс перезапускается через 5 секунд и заново выбирает
-актуальный pod. Пока VM выключена, служба повторяет подключение; саму VM она
-не запускает. Уже оборванное JDBC-соединение нужно подключить повторно.
+Все локальные подключения входят в пользовательскую группу systemd
+`local-vm/sellgar-dev-tunnels.target`. Они работают независимо от watcher,
+терминала и агентской сессии. Каждый туннель — отдельная служба:
+
+| Служба | Адрес на хосте | Service в `sellgar-dev` |
+| --- | --- | --- |
+| `sellgar-postgresql-tunnel` | `127.0.0.1:15432` | `postgresql-rw:5432` |
+| `sellgar-rabbitmq-ui-tunnel` | `http://127.0.0.1:15674` | `rabbitmq:15672` |
+| `sellgar-admin-gateway-tunnel` | `http://127.0.0.1:4020` | `admin-gateway:8080` |
+| `sellgar-client-gateway-tunnel` | `http://127.0.0.1:4030` | `client-gateway:8080` |
+
+Туннели слушают только loopback. При обрыве соединения, перезапуске pod или
+недоступности VM процесс перезапускается через 5 секунд и выбирает актуальный pod.
+Пока VM выключена, службы повторяют подключение; саму VM они не запускают.
+Уже оборванное JDBC-соединение нужно подключить повторно. Остановка watcher
+не должна останавливать эти службы. Временные SSH/port-forward процессы
+на перечисленных портах не нужны.
 
 Установка из корня инфраструктурного репозитория:
 
 ```bash
-install -Dm644 bootstrap/local-vm/sellgar-postgresql-tunnel.service \
-  "$HOME/.config/systemd/user/sellgar-postgresql-tunnel.service"
+mkdir -p "$HOME/.config/systemd/user"
+install -m644 bootstrap/local-vm/sellgar-*.service \
+  bootstrap/local-vm/sellgar-dev-tunnels.target "$HOME/.config/systemd/user/"
 systemctl --user daemon-reload
-systemctl --user enable --now sellgar-postgresql-tunnel.service
+systemctl --user enable --now sellgar-dev-tunnels.target
 loginctl enable-linger "$USER"
 ```
 
 Linger запускает пользовательский systemd при загрузке Ubuntu и сохраняет
-работу службы после выхода из сессии. Служба использует существующий kubeconfig
+работу служб после выхода из сессии. Службы используют существующий kubeconfig
 из `~/.local/share/sellgar/vm/sellgar-k3s/`; credentials в unit не записываются.
 
+Проверка и управление группой; отдельную службу можно проверить и перезапустить
+по её имени без остановки остальных:
+
 ```bash
-systemctl --user status sellgar-postgresql-tunnel.service
-journalctl --user -u sellgar-postgresql-tunnel.service -n 30
-systemctl --user stop sellgar-postgresql-tunnel.service
+systemctl --user status sellgar-dev-tunnels.target 'sellgar-*-tunnel.service'
+journalctl --user -u sellgar-client-gateway-tunnel.service -n 30
+systemctl --user restart sellgar-client-gateway-tunnel.service
+systemctl --user stop sellgar-dev-tunnels.target
+systemctl --user start sellgar-dev-tunnels.target
 ```
 
 ## Argo CD

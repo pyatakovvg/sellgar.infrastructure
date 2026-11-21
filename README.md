@@ -98,10 +98,14 @@ Traefik strips `/api/admin` and `/api/client`; `/socket.io` is preserved for
 physical channel paths. Kubernetes readiness removes unready pods from routing.
 Socket transports are WebSocket-only and require no polling sticky sessions.
 
-To administer services use authenticated `kubectl port-forward` or SSH tunnel,
+Local dev PostgreSQL, RabbitMQ UI and Admin/Client gateway connections are managed
+by the persistent user systemd target `sellgar-dev-tunnels.target`, independent of
+application watchers and terminals. Installation and ports:
+[dev tunnels](bootstrap/README.md#постоянные-туннели-dev-среды).
+For other administrative connections use authenticated `kubectl port-forward` or SSH tunnel,
 not public database/broker/MinIO console Ingress. Examples:
 `kubectl -n sellgar-dev port-forward service/postgresql-rw 15432:5432`,
-`kubectl -n sellgar-dev port-forward service/rabbitmq 15672:15672`,
+`kubectl -n sellgar-dev port-forward service/rabbitmq 15674:15672`,
 `kubectl -n sellgar-dev port-forward service/minio 19001:9001`.
 Retrieve credentials through your authorized Kubernetes client; never paste them
 into issues or logs. These manifests do not provision domain service databases

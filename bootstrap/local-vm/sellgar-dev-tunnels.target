@@ -1,0 +1,6 @@
+[Unit]
+Description=Sellgar dev localhost tunnels
+Wants=sellgar-postgresql-tunnel.service sellgar-rabbitmq-ui-tunnel.service sellgar-admin-gateway-tunnel.service sellgar-client-gateway-tunnel.service
+
+[Install]
+WantedBy=default.target

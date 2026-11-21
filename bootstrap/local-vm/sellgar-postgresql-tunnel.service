@@ -1,5 +1,6 @@
 [Unit]
 Description=Sellgar dev PostgreSQL localhost tunnel
+PartOf=sellgar-dev-tunnels.target
 StartLimitIntervalSec=0
 
 [Service]
