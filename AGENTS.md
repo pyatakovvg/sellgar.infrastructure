@@ -8,6 +8,8 @@
 - Product использует `.github/workflows/build-service.yml` для сборки/публикации
   и `.github/workflows/deliver-service.yml` для прямой Helm-доставки.
   Этапы migrate/deploy видны в GitHub; Argo не должен управлять теми же ресурсами.
+  JavaScript actions должны объявлять Node 24 или новее в собственном manifest;
+  принудительный запуск устаревшего action на новом runtime не заменяет обновление.
   Переход работающей среды выполняется отдельно, с сохранением ресурсов:
   `docs/product-delivery.md`. Другие сервисы сохраняют Helm OCI-доставку.
   Репозиторий приложения хранит `helm/values.app.yaml` и

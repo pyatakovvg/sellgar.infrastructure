@@ -33,6 +33,16 @@ digest `sha256:1829e303ab058e16e5afbb9565993ff0bea2479d36aa0ffbd141793abe2c367f`
 for source `717a6c6eb1869a144234831288b72e07a00348b7`. Helm revision 4 was deployed,
 the new pod became ready, and the workflow's digest/HTTP health checks passed.
 
+[Fresh push run 44930076889](https://github.com/pyatakovvg/sellgar.product.service/actions/runs/44930076889)
+then completed all five jobs without manual retries in 4m 10s. Source
+`5c334601f9fd9c0a22acbcf752ff0f601aabfa2d` was deployed through Helm revision 5.
+
+JavaScript actions in this Product pipeline declare Node 24. Delivery v0.5.2
+updates setup-kubectl to official v5.2.0, pinned at
+`bda439f5f36b99b262ebdcd3613869bddb064c8e`, replacing the v4 action whose manifest
+still declared Node 20. Checkout, Helm, artifact upload/download and registry
+login manifests were checked at their pinned commits and already declare Node 24.
+
 ## Ownership and files
 
 - Product owns Dockerfile, application/migration images, Jest tests and `helm/`
@@ -79,7 +89,7 @@ not rebuild the images. Stage is optional and not provisioned here.
 
 The shared chart is checked out by its recorded commit; values by the exact
 application source commit. The workflow calls and chart checkout select the
-infrastructure release `delivery-v0.5.1`. Publish that immutable GitHub Release/tag
+infrastructure release `delivery-v0.5.2`. Publish that immutable GitHub Release/tag
 before Product. Never move it; changes to the shared pipeline/chart get a new version.
 
 ## Migration and configuration
@@ -131,7 +141,7 @@ automatic database downgrade or migration rollback workflow is implemented.
 ## Enabling the pilot
 
 1. Publish the infrastructure workflow/chart as immutable release/tag
-   `delivery-v0.5.1`, then publish Product. Its workflow calls and chart checkout
+   `delivery-v0.5.2`, then publish Product. Its workflow calls and chart checkout
    already select that version. No other application's delivery reference changes.
 2. Configure the official runner and scoped Kubernetes credential as described
    in `bootstrap/runner/README.md`.
